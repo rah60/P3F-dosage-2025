@@ -1,0 +1,251 @@
+---
+title: "Dbt System scRNA-Seq Analysis"
+author: "Rachel Hoffman, Meng Wang"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+execute:
+        cache: true
+format:
+        html:
+            code-fold: true
+            code-overflow: "wrap"
+            embed-resources: true
+            tidy: true
+knitr:
+        opts_chunk:
+                cache.lazy: false
+---
+
+
+````{r load_packages}
+#| code-summary: Loading required Packages
+#| output: false
+#| warning: false
+#| message: false
+#| eval: true
+#| include: true
+#| cache: true
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(ComplexHeatmap))
+suppressPackageStartupMessages(library(RColorBrewer))
+suppressPackageStartupMessages(library(viridis))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(cowplot))
+suppressPackageStartupMessages(library(harmony))
+source("/gpfs0/home2/gdstantonlab/mxw010/Data/dbt-dosage/scRNA/velocity/CR_runs/scSeurat.R")
+````
+
+# QC and Preprocessing
+
+## Read in Seurat Object
+
+````{r QC}
+sc_read_data <- function(sampleName) {
+        h5_path <- paste0("/home/gdstantonlab/mxw010/Data/dbt-dosage/scRNA/velocity/CR_runs/", sampleName, "-vial1/outs/filtered_feature_bc_matrix.h5")
+        sc_obj <- tenx_load_qc(h5_file=h5_path)
+        sc_obj@meta.data['condition'] <- rep(sampleName, nrow(sc_obj@meta.data))
+        sc_obj@meta.data['log10GenesPerUMI'] <- log10(sc_obj$nFeature_RNA) / log10(sc_obj$nCount_RNA)
+        return(sc_obj)
+}
+
+file_lists <- list.dirs(path = "CR_runs", full.names = FALSE, recursive = FALSE) %>%
+              sapply(., sub, pattern="-vial1", replacement="")
+x <- sapply(file_lists, sc_read_data)
+
+features <- c('nCount_RNA', 'nFeature_RNA', 'percent.mt', 'log10GenesPerUMI')
+
+feature_hist <- function(sobject,
+                         features,
+                         cutoff_table = NULL,
+                         plotly = TRUE) {
+    temp_data <-
+        Seurat::FetchData(sobject,
+                          vars = features) %>%
+            tidyr::pivot_longer(cols = dplyr::everything(),
+                                names_to = "feature",
+                                values_to = "value")
+
+    plot_name <-
+        ggplot2::ggplot(temp_data,
+                        ggplot2::aes(x = value)) +
+            ggplot2::geom_histogram(bins = 400) +
+            ggplot2::facet_wrap(~ feature,
+                                scales = "free",
+                                ncol = 1) +
+            ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90,
+                                                               hjust = 1))
+
+    if (!is.null(cutoff_table)) {
+        # Function to add min/max lines
+        if (any(!c("feature", "min_val", "max_val") %in%
+                colnames(cutoff_table))) {
+            stop(paste("cutoff_table must have columns named",
+                       "'feature',",
+                       "'min_val'",
+                       "and 'max_val'"))
+        }
+        for (limit in c("min_val", "max_val")) {
+            plot_name <- local({
+                limit <- limit
+                plot_name +
+                    ggplot2::geom_vline(data = cutoff_table,
+                                mapping = ggplot2::aes(xintercept = get(limit)),
+                                color = "black",
+                                linetype = "dashed",
+                                size = 1)
+            })
+        }
+    }
+
+    if (plotly==TRUE) {
+        plot_name <- ggplotly(plot_name)  %>%
+                      layout(hovermode = "x unified",
+                             hoverlabel=list(bgcolor='rgba(255,255,255,0.75)',
+                                            font=list(color='black'))) #transparency
+    }
+    return(plot_name)
+}
+
+
+# merged_dbt <- reduce(x, merge)
+````
+
+```{r, eval=FALSE, include=FALSE}
+library(htmlwidgets)
+for (i in c(1,2,6,5,3,4)) {
+        sampleName <- names(x)[i]
+        # fileName <- paste0(sampleName, ".pdf")
+        p <- feature_hist(x[[i]],c('nCount_RNA', 'nFeature_RNA', 'percent.mt', 'log10GenesPerUMI'))
+        #      ggtitle(sampleName) +
+        #      theme(plot.title = element_text(hjust = 0.5, size=24))
+       # ggsave(fileName, p)
+        saveWidget(ggplotly(p), paste0(sampleName, ".html"),selfcontained=T)
+}
+
+
+p <- feature_hist(x[[i]],c('nCount_RNA', 'nFeature_RNA', 'percent.mt', 'log10GenesPerUMI'))
+        #      ggtitle(sampleName) +
+        #      theme(plot.title = element_text(hjust = 0.5, size=24))
+       # ggsave(fileName, p)
+        saveWidget(ggplotly(p), paste0(sampleName, ".html"),selfcontained=T)
+
+# p1 <- ggplotly(p) %>%
+# layout(hovermode = "x unified")
+# saveWidget(p1, paste0(sampleName, ".html"),selfcontained=T)
+```
+
+## Deciding Cutoffs
+
+::: {.panel-tabset}
+
+### Dbt-0-0hr
+
+````{r}
+#| out-width: 10
+#| out-height: 15
+sampleName <- paste0('Dbt-0-0hr', '-vial1')
+p <- feature_hist(x[[sampleName]],c('nCount_RNA', 'nFeature_RNA', 'percent.mt', 'log10GenesPerUMI'))
+# ggplotly(p) %>%
+# layout(hovermode = "x unified")
+p
+````
+
+### Dbt-0-2wk
+
+````{r}
+#| out-width: 10
+#| out-height: 15
+sampleName <- paste0('Dbt-0-2wk', '-vial1')
+p <- feature_hist(x[[sampleName]],c('nCount_RNA', 'nFeature_RNA', 'percent.mt', 'log10GenesPerUMI'))
+p
+````
+
+### Dbt-75-2wk
+
+````{r}
+#| out-width: 10
+#| out-height: 15
+sampleName <- paste0('Dbt-75-2wk', '-vial1')
+p <- feature_hist(x[[sampleName]],c('nCount_RNA', 'nFeature_RNA', 'percent.mt', 'log10GenesPerUMI'))
+p
+````
+
+### Dbt-500-8hr
+
+````{r}
+#| out-width: 10
+#| out-height: 15
+sampleName <- paste0('Dbt-500-8hr', '-vial1')
+p <- feature_hist(x[[sampleName]],c('nCount_RNA', 'nFeature_RNA', 'percent.mt', 'log10GenesPerUMI'))
+p
+````
+
+### Dbt-500-24hr
+
+````{r}
+#| out-width: 10
+#| out-height: 15
+sampleName <- paste0('Dbt-500-24hr', '-vial1')
+p <- feature_hist(x[[sampleName]],c('nCount_RNA', 'nFeature_RNA', 'percent.mt', 'log10GenesPerUMI'))
+p
+````
+
+### Dbt-500-2wk
+
+````{r}
+#| out-width: 10
+#| out-height: 15
+sampleName <- paste0('Dbt-500-2wk', '-vial1')
+p <- feature_hist(x[[sampleName]],c('nCount_RNA', 'nFeature_RNA', 'percent.mt', 'log10GenesPerUMI'))
+p
+````
+
+:::
+
+## Filtering and Merging
+
+````{r, eval=FALSE}
+cutoff <- read.csv('/home/gdstantonlab/mxw010/Data/dbt-dosage/scRNA/velocity/cutoff.txt',header=T)
+x_filtered <- list()
+for (i in 1:length(x)) {
+        x_filtered[[i]] <- subset(x[[i]],
+                        subset= nFeature_RNA > 300 &
+                        percent.mt < cutoff[i,4] &
+                        log10GenesPerUMI > cutoff[i,1] &
+                        nCount_RNA > cutoff[i,2] &
+                        nCount_RNA < cutoff[i,3])
+}
+
+scrna_data <- purrr::reduce(x_filtered[c(1,5,3,4)], merge) %>%
+        NormalizeData() %>%
+        FindVariableFeatures() %>%
+        ScaleData() %>%
+        RunPCA(npcs = 30) %>%
+        FindNeighbors(k.param = 30) %>%
+        FindClusters() %>%
+        RunUMAP(dims = 1:30) %>%
+        CellCycleScoring(g2m.features = Seurat::cc.genes$g2m.genes, s.features = Seurat::cc.genes$s.genes)
+
+saveRDS(scrna_data ,"dosage500_merged.rds")
+
+scrna_data <- purrr::reduce(x_filtered, merge) %>%
+        NormalizeData() %>%
+        FindVariableFeatures() %>%
+        ScaleData() %>%
+        RunPCA(npcs = 30) %>%
+        FindNeighbors(k.param = 30) %>%
+        FindClusters() %>%
+        RunUMAP(dims = 1:30) %>%
+        CellCycleScoring(g2m.features = Seurat::cc.genes$g2m.genes, s.features = Seurat::cc.genes$s.genes)
+
+saveRDS(scrna_data ,"all_samples_merged.rds")
+# sobject <- Seurat::ScaleData(sobject,
+#                                  vars.to.regress = c("S.Score", "G2M.Score"),
+#                                  features = rownames(x = sobject))
+
+````
+
+# R Package Information
+```{r sessionInfos}
+sessionInfo()
+```
