@@ -132,7 +132,7 @@ get_these <- factors_geneid[which(factors_geneid$GENEID %in% all_exp_genes),1]
 keep_names <- all_factor_names[get_these]
 keep_names <- c(keep_names, all_factor_names[P3F_index]) #make sure P3F remains in list, b/c no ensembl id for it
 
-#narrow motif families based on expressed factors
+#narrow motif families based on expressed factors, ultimately I am just filtering out motifs for which there are no expressed factors in that family (as opposed to filtering expressed factors themselves)
 keep_motifs <- unique(all_factor_names_motif_type[keep_names])
 
 #for any motif names that don't have a match in the expressed gene set, drop that from the dataset 
