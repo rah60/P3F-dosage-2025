@@ -1,0 +1,184 @@
+---
+title:
+author: 
+date:
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#establishes supplemental table 1
+knitr::opts_chunk$set(echo = TRUE, warning = F, message=F)
+library(gplots) 
+library(ggplot2)
+library(ggrepel)
+library(viridis)
+library(tidyverse)
+library(lemon)
+library(ensembldb)
+library(EnsDb.Hsapiens.v86)
+library(gt)
+```
+
+```{r, include=FALSE} 
+#functions
+
+#import list of expressed genes from bulk RNA-seq generated in make_expressed_gene_list.R
+#and get genes expressed at a dosage  
+get_dosage_gene_vector <- function(x, genes_rds = "~/dosage_manuscript/rds/gene_expressed_at_dosages.rds"){ #x is one dosage
+  genes_df <- readRDS(genes_rds)
+  subset_x <- genes_df[which(genes_df$Dosage == x),]
+  subset_x$gene_name
+}
+
+#read in motif data files from Homer
+read_motif_data <- function(x, path_prefix = "~/dbt_dosage_two_reps/peak_categories/with_zero/homer_results/"){ #x is data name prefix
+    results_path <- paste(path_prefix,x,"/knownResults.txt",sep="") 
+    results <- read.table(results_path, header = T, sep="\t", comment.char = "") 
+    results
+}
+
+#get motif types out of dataframe
+get_homer_motif_types_df <- function(x){ #x is dataframe
+    temp <- x$Motif.Name #modified to not select top 50 based on prior filtering steps
+    temp1 <- strsplit(temp, "/")
+    temp2 <- strsplit(sapply(temp1,"[[",1),"[(]")
+    temp3 <- strsplit(sapply(temp2, "[",2),"[)]")
+    unlist(sapply(temp3, "[[",1))
+}
+
+#get motif names out of dataframe
+get_homer_factor_names_df <- function(x){ #x is dataframe
+    temp <- x$Motif.Name[1:50] 
+    temp1 <- strsplit(temp, "/")
+    temp2 <- strsplit(sapply(temp1,"[[",1),"[(]")
+    temp3 <- strsplit(sapply(temp2, "[",1),"[)]")
+    temp4 <- unlist(sapply(temp3, "[[",1))
+    temp5 <- strsplit(temp4, "\\+")
+    unlist(sapply(temp5, "[[",1))
+    }
+
+#get vector of motif types with names that are the actual factors
+get_list_motif_factor_names_df <- function(x){ #x is dataframe
+    temp <- x$Motif.Name
+    temp1 <- strsplit(temp, "/")
+    temp2 <- strsplit(sapply(temp1,"[[",1),"[(]")
+    temp3 <- strsplit(sapply(temp2, "[",1),"[)]")
+    temp4 <- unlist(sapply(temp3, "[[",1))
+    temp5 <- strsplit(temp4, "\\+")
+    part_1 <- unlist(sapply(temp5, "[[",1))
+
+    temp6 <- strsplit(sapply(temp2, "[",2),"[)]")
+    part_2 <- unlist(sapply(temp6, "[[",1))
+
+    names(part_2) <- part_1
+    part_2   
+    }
+
+```
+
+```{r, include=FALSE}
+dosages <- c("75", "150", "250", "500", "75_150_250_500_1000")
+
+#first establish motif types found in each dosage
+motif_types <- vector("list")
+dosage_exp <- vector("list")
+possible_tfs <- data.frame()
+
+#iterate through dosages
+for(i in 1:length(dosages)){
+
+    #get dosage
+    dosages.v <- strsplit(dosages[i], "_")[[1]]
+
+    #get expressed genes at dosages
+    dosage_exp[[i]] <- sapply(dosages.v, get_dosage_gene_vector) %>%
+                         unlist()
+
+    #read in motif file
+    motifs_temp <- read_motif_data(dosages[i])
+
+    #get motif types vector, named with factor names
+    all_factor_names_motif_type <- get_list_motif_factor_names_df(motifs_temp)
+
+    #get factor names
+    all_factor_names <- unique(names(all_factor_names_motif_type))
+
+    if("NF1" %in% all_factor_names){
+    all_factor_names[which(all_factor_names == "NF1")] <- "NFIA" } #fixing homer naming issue
+
+    names(all_factor_names) <- toupper(all_factor_names) #to avoid case issues
+    P3F_index <- which(all_factor_names == "PAX3:FKHR-fusion")
+
+    #have to use uppercase here, get gene id for comparing to expressed genes 
+    factors_geneid <- ensembldb::select(EnsDb.Hsapiens.v86, keys=toupper(all_factor_names), keytype="SYMBOL", columns=c("SYMBOL", "GENEID"), ignore.case=T)
+    
+    #get factor names that are expressed
+    get_these <- factors_geneid[which(factors_geneid$GENEID %in% dosage_exp[[i]]),1]
+
+    #narrowed factor names
+    keep_names <- all_factor_names[get_these]
+    keep_names <- c(keep_names, all_factor_names[P3F_index]) #make sure P3F remains in list, b/c no ensembl id for it
+
+    #narrowed motif types
+    keep_motifs <- unique(all_factor_names_motif_type[keep_names])
+
+    #remove nas
+    keep_motifs <- keep_motifs[!is.na(keep_motifs)]
+
+    #subset dataframe based on motif families of expressed factors, keep top 50
+    keep_index <- which(get_list_motif_factor_names_df(motifs_temp) %in% keep_motifs)
+    motifs_temp <- motifs_temp[keep_index,]
+    motifs_temp <- motifs_temp[1:50,]
+
+    #now narrow based on expressed factors
+    temp_table_1 <- get_list_motif_factor_names_df(motifs_temp)
+    temp_table_1 <-  temp_table_1[which(names(temp_table_1) %in% keep_names)]
+    
+    if("TEA" %in% temp_table_1){
+    temp_table_1[which(temp_table_1 == "TEA")] <- "TEAD" #using TEAD for TEA and TEAD factors
+     }
+
+    if("PAX3:FKHR-fusion" %in% names(temp_table_1)){
+    names(temp_table_1)[which(names(temp_table_1) == "PAX3:FKHR-fusion")] <- "PAX3::FOXO1" #change to proper name for P3F
+     }
+
+    #convert to dataframe, add dosage
+    temp_table <- as.data.frame(temp_table_1)
+    colnames(temp_table) <- "motif_type"
+    temp_table <- rownames_to_column(temp_table, var = "TF_name")
+    temp_table$dosage <- rep(dosages[i], times=nrow(temp_table))
+
+    #add to overall dataframe
+    possible_tfs <- rbind(possible_tfs, temp_table)
+
+}
+
+#rearrange in prep for plotting table
+possible_tfs_2 <- possible_tfs %>% pivot_wider(names_from = motif_type, values_from = TF_name, values_fn=list, values_fill = list("-") )
+
+#change 75_150_250_500_1000 to
+possible_tfs_2$dosage[5] <- "common"
+
+library(data.table)
+
+#write table
+fwrite(possible_tfs_2, file = "~/dosage_manuscript/figure_3/motif_table_2.tsv", quote=F, row.names=F, sep="\t", sep2=c("", ",", ""))
+
+```
+
+
+```{r, echo=F}
+#make table
+possible_tfs_2 %>%
+    gt(rowname_col="dosage") %>%
+    tab_stubhead(label="Dosage (ng/ml)") %>%
+    tab_spanner(label = "Motif class", columns= colnames(possible_tfs_2)[2:length(colnames(possible_tfs_2))]) %>%
+    cols_align(align="center") %>%
+    tab_style(style = cell_text(weight = "bold"),locations = list(cells_stub(), cells_column_labels())) %>%
+    tab_style(style=cell_text( style="italic"), locations=list(cells_stubhead(), cells_column_spanners())) %>%
+    tab_style(style=cell_text( weight="bold", style="italic"), locations=cells_title() )  %>%
+    tab_source_note(source_note = "Note that there is no NR motif class column because the relevant factor is not expressed.")
+
+```
+
+**Table S1.** Expressed transcription factors with motifs in dosage-specific peaksets.
