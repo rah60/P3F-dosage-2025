@@ -33,6 +33,9 @@ col_3 <- c(col.v[1],col.v[2],col.v[5])
 
 p1 <- DimPlot(dbt_1, cols=c(tol_muted[2],tol_muted[9]), pt.size=0.8 ) + theme_classic(base_size = 25) + guides(colour = guide_legend(override.aes = list(size=4))) 
 
+#DimPlot(dbt_1, cols=c(tol_muted[2],tol_muted[9]), pt.size=0.8, split.by= "sample_names" ) + theme_classic(base_size = 25) + guides(colour = guide_legend(override.aes = list(size=4))) 
+
+
 png("~/dosage_manuscript/figure_2/short_timept_dimplot.png", width = 9, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p1)
 dev.off()
@@ -53,6 +56,9 @@ Idents(dbt_2) <- "subclusters_2"
 
 p2 <- DimPlot(dbt_2, cols=c(tol_muted[1],tol_muted[3:5],tol_muted[7:8]),pt.size=0.8 ) + theme_classic(base_size = 25) + guides(colour = guide_legend(override.aes = list(size=4)))
 
+DimPlot(dbt_2, cols=c(tol_muted[1],tol_muted[3:5],tol_muted[7:8]),pt.size=0.8, split.by="sample_names" ) + theme_classic(base_size = 25) + guides(colour = guide_legend(override.aes = list(size=4)))
+
+
 png("~/dosage_manuscript/figure_2/long_timept_dimplot.png", width = 10, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p2)
 dev.off()
@@ -68,13 +74,18 @@ dbt_2$abbrev_cluster_names <- metadata2
 
 n_cells <- FetchData(dbt_2, #look at cells per sample in each cluster
                      vars=c("abbrev_cluster_names","sample_names")) %>%
-          count(abbrev_cluster_names, sample_names) %>%
-          tidyr::spread(abbrev_cluster_names, n) %>%
-          pivot_longer(cols=c("Cycling","Progenitor-like", "Ground state","AP-1 exp.", "Differentiated", "P3F-specific"), names_to="cluster")
+          count(abbrev_cluster_names, sample_names, name="value") #%>% #not sure why I had this here, can remove?
+          #tidyr::spread(abbrev_cluster_names, n) %>%
+          #pivot_longer(cols=c("Cycling","Progenitor-like", "Ground state","AP-1 exp.", "Differentiated", "P3F-specific"), names_to="cluster")
 
-n_totals <- FetchData(dbt_2, #look at cells per sample in each cluster
-                     vars=c("abbrev_cluster_names")) %>%
-          count(abbrev_cluster_names) 
+# n_totals <- FetchData(dbt_2, #look at cells per sample
+#                      vars=c("abbrev_cluster_names")) %>%
+#           count(abbrev_cluster_names) 
+
+#temp test version
+n_totals <- FetchData(dbt_2, #look at cells per sample
+                     vars=c("sample_names")) %>%
+          count(sample_names) 
 
 n_cells$cluster_total <- NA
 for(i in 1:nrow(n_cells)){
@@ -85,6 +96,20 @@ for(i in 1:nrow(n_cells)){
 }
 
 n_cells$percent <- n_cells$value/n_cells$cluster_total
+
+#temp test figure
+p3 <- ggplot(n_cells, aes( x=sample_names, fill=sample_names, y=percent ))+
+  geom_bar(stat = "identity", position = "dodge")+
+  labs(x="Sample",y="Fraction of sample",fill="Sample")+
+  theme_classic(base_size = 20)+
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1),legend.position = "none")+
+  scale_y_continuous(expand = c(0,0))+
+  facet_rep_wrap(vars(abbrev_cluster_names), nrow=3,scales="free" )+ #take away scales="free" to get _2 version
+  scale_fill_manual(values = col_3)
+
+png("~/dosage_manuscript/figure_2/long_timept_cluster_distribution_percent_3.png", width = 6, height = 11, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+print(p3)
+dev.off()
 
 p3 <- ggplot(n_cells, aes( x=sample_names, fill=sample_names, y=percent ))+
   geom_bar(stat = "identity", position = "dodge")+

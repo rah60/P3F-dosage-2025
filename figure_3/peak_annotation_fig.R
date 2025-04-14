@@ -65,13 +65,16 @@ dev.off()
 #to plot percent of each category, summarize data
 new_ann <- count(plot_annotations, annotation, dosage)
 
-total_ann <- count(plot_annotations, annotation)
+#total_ann <- count(plot_annotations, annotation)
+
+#temp test
+total_ann <- count(plot_annotations, dosage)
 
 #establish total for each category and add as a new column
 new_ann$cluster_total <- NA
 for(i in 1:nrow(new_ann)){
 
-  row_num <- which(total_ann[,1] %in% new_ann[i,1])
+  row_num <- which(total_ann[,1] %in% new_ann[i,2]) #change to 1 for prev way
   new_ann[i,4] <- total_ann[row_num,2]
 
 }
@@ -80,15 +83,15 @@ new_ann$percent <- new_ann$n/new_ann$cluster_total #calculate percent
 
 p2 <- ggplot(new_ann, aes(x=dosage,y=percent, fill=dosage) )+
   geom_bar(show.legend = FALSE,stat = "identity", position = "dodge")+
-  labs(y="Fraction of category",x="Doxycycline (ng/mL)", title="")+
+  labs(y="Fraction of sites in sample",x="Doxycycline (ng/mL)", title="")+
   scale_x_discrete(limits = dosage)+
   scale_y_continuous(expand = c(0,0))+
    theme_classic(base_size=20)+
    scale_fill_manual(values = col.v)+
    theme(plot.title=element_text(hjust=0.5))+
-   facet_rep_wrap(vars(annotation), labeller = labeller(annotation = new.labs),nrow=2)+
+   facet_rep_wrap(vars(annotation), labeller = labeller(annotation = new.labs),nrow=2, scales="free")+
     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
-png("~/dosage_manuscript/figure_2/total_peak_annotation_color_by_dosage_percent.png", width = 12, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_2/total_peak_annotation_color_by_dosage_percent_3.png", width = 12, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p2)
 dev.off()

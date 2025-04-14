@@ -1,11 +1,11 @@
+#compare motifs in the homer output file knownResults.txt via new plotting idea
+
 #clear workspace
 rm(list = ls())
 graphics.off()
 
-#compare motifs in the homer output file knownResults.txt via motif frequency
-
 library(gplots)
-library(ggplot2)
+library(ggplot2)  
 library(ggrepel)
 library(viridis)
 library(tidyverse)
@@ -14,27 +14,25 @@ library(ensembldb)
 library(EnsDb.Hsapiens.v86)
 library(RColorBrewer)
 
-#Extended Data Figure 3E
+#Extended Data Figure 3D
 
-#list prefixes for categories of peaks for which to plot motifs--within same vector if you want them plotted together, each item in list a separate plot
-plots_list <- list(
-          c("75","150","250", "500","75_150_250_500_1000"))
+plots_list <- list(c("cluster_1","cluster_2", "cluster_3","cluster_4","cluster_5","cluster_6")
+          )
 
-#number of categories in each plot
-new_names <- c("five")
+new_names <- c("six")
 
-#plot name prefix
-file_var <- c( "dosage_new_plots_no_1000")
+file_var <- c("kmeans_six")
 
-path_prefix <- "~/dbt_dosage_two_reps/peak_categories/with_zero/homer_results/"
+dosages <- c("0","75","150","250","500","1000")
 
+path_prefix <- "~/dbt_dosage_two_reps/clusters/homer_results/"
 #functions
 
 #make function to take dosage & return vector of gene names
 #### then I can split strings on "_" to get dosages, and get as many gene vectors as needed for given subset
 
 #read in motif data table
-read_motif_data <- function(x, path_prefix = "~/dbt_dosage_two_reps/peak_categories/with_zero/homer_results/"){ #x is data name prefix
+read_motif_data <- function(x, path_prefix = "~/dbt_dosage_two_reps/clusters/homer_results/"){ #x is data name prefix
     results_path <- paste(path_prefix,x,"/knownResults.txt",sep="") 
     results <- read.table(results_path, header = T, sep="\t", comment.char = "") 
     results
@@ -65,8 +63,8 @@ get_list_motif_factor_names_df <- function(x){ #x is dataframe
     names(part_2) <- part_1
     part_2   
     }
-    
-#get motif types from vector      
+
+#get motif types from vector       
 get_homer_motif_types <- function(x){ #x is vector of homer motif names
     temp1 <- strsplit(x, "/")
     temp2 <- strsplit(sapply(temp1,"[[",1),"[(]")
@@ -99,17 +97,14 @@ get_homer_percent <- function(x){ #x is vector
 
 for(t in 1:length(plots_list)){
   
-  #vector of categories for plot
   plots.v <- plots_list[[t]]
 
-  #read in motif data for each category/dosage
   motifs_list <- lapply(plots.v, read_motif_data)
 
-#get all potential motif types in vector, named by factor
+#get all potential motif types in vector, named by factor, no cut-off yet
   all_factor_names_motif_type <- lapply(motifs_list, get_list_motif_factor_names_df) %>%
                       unlist() 
-
- #unique factor names across all samples                     
+                      
   all_factor_names <- unique(names(all_factor_names_motif_type))
 
 if("NF1" %in% all_factor_names){
@@ -118,26 +113,22 @@ if("NF1" %in% all_factor_names){
 names(all_factor_names) <- toupper(all_factor_names) #to avoid case issues
 P3F_index <- which(all_factor_names == "PAX3:FKHR-fusion")
 
-#have to use uppercase here, get gene id for comparing to expressed genes  
+#have to use uppercase here #need to check what doesn't get converted to make sure it's ok/makes sense
 factors_geneid <- ensembldb::select(EnsDb.Hsapiens.v86, keys=toupper(all_factor_names), keytype="SYMBOL", columns=c("SYMBOL", "GENEID"), ignore.case=T)
 
 #get dosages
-temp1 <- strsplit(plots.v, "_")
-dosages.v <- unique(unlist(temp1))
+dosages.v <- dosages
 
-#compare to the list of expressed genes in scRNA/RNA seq 
+#compare to the list of expressed genes in scRNA/RNA seq (get with function for that)
 all_exp_genes <- lapply(dosages.v, get_dosage_gene_vector) %>%
                       unlist() %>%
                       unique()
 
-#get gene symbol of expressed genes and factor names overlap
 get_these <- factors_geneid[which(factors_geneid$GENEID %in% all_exp_genes),1]
 
-#narrow based on expressed factors
 keep_names <- all_factor_names[get_these]
 keep_names <- c(keep_names, all_factor_names[P3F_index]) #make sure P3F remains in list, b/c no ensembl id for it
 
-#narrow motif families based on expressed factors
 keep_motifs <- unique(all_factor_names_motif_type[keep_names])
 
 #for any motif types that don't have a match in the expressed gene set, drop that from the dataset (or save a list here & drop later in the script)
@@ -155,11 +146,11 @@ keep_motifs <- unique(all_factor_names_motif_type[keep_names])
                       unlist() %>%
                       unique()
 
-if("TEA" %in% all_motif_types){ #using TEAD for motifs that Homer labels as TEA and TEAD
+if("TEA" %in% all_motif_types){
   all_motif_types <- all_motif_types[-which(all_motif_types == "TEA")]}
 
 if("Zf" %in% all_motif_types){
-  all_motif_types <- all_motif_types[-which(all_motif_types == "Zf")] #using more readable name
+  all_motif_types <- all_motif_types[-which(all_motif_types == "Zf")]
   all_motif_types <- c(all_motif_types, "Zinc finger")} #to make this clearer
   
   col.v1 <- magma(length(all_motif_types)+1)
@@ -202,27 +193,19 @@ if("Zf" %in% all_motif_types){
 
     }
 
+
     
 #plot pval vs motif type, and then add text with label as specific motif name
   compare_dosage_0 <- plots.v 
 
   if(new_names[t] == "six"){
-    new.labs <- c("75 ng/ml","150 ng/ml","250 ng/ml","500 ng/ml","1000 ng/ml","common")
-  }
-  if(new_names[t] == "five"){
-    new.labs <- c("75 ng/ml","150 ng/ml","250 ng/ml","500 ng/ml","common")
-  }
-  if(new_names[t] == "three"){
-    new.labs <- c("75, 150, 250 ng/ml","150, 250, 500 ng/ml","250, 500, 1000 ng/ml")
-  }
-  if(new_names[t] == "four"){
-    new.labs <- c("75, 150 ng/ml","150, 250 ng/ml","250, 500 ng/ml","500, 1000 ng/ml")
+    new.labs <- c("Cluster 1","Cluster 2","Cluster 3","Cluster 4","Cluster 5","Cluster 6")
   }
   
   names(new.labs) <- compare_dosage_0
   
   results_df$sample_name <- factor(results_df$sample_name, levels=compare_dosage_0) #this fixes ordering of plots
-
+ 
  #boxplots without factor names
   p2 <- ggplot(results_df, aes(x=type_only, y=X..of.Target.Sequences.with.Motif))+
     geom_boxplot(aes(color=type_only))+
@@ -234,26 +217,12 @@ if("Zf" %in% all_motif_types){
      guides(color = "none") +
     facet_rep_wrap(vars(sample_name), labeller=labeller(sample_name = new.labs), ncol=1) 
 
-  #plot dimensions based on number of plots
-  if(length(plots.v) == 6){
-    height_var1 <- 20
+   if(length(plots.v) == 6){
+    height_var1 <- 24
     height_var2 <- 12
   }
-  if(length(plots.v) == 5){
-    height_var1 <- 17
-    height_var2 <- 10
-  }
-  if(length(plots.v) == 4){
-    height_var1 <- 14
-    height_var2 <- 8
-  }
-  if(length(plots.v) == 3){
-    height_var1 <- 11
-    height_var2 <- 7.5
-  }
-
-  #save plot
-  png(paste0("~/dosage_manuscript/figure_3/",file_var[t], "_freq_vs_motif_type_nolabel_filtered_type_toplabel.png" ), width = 4, height = height_var2, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+  
+  png(paste0("~/dbt_dosage_two_reps/clusters/",file_var[t], "_freq_vs_motif_type_nolabel_filtered_type_toplabel.png" ), width = 4, height = height_var2, units = "in", res = 200, bg = "transparent", type = "cairo-png")
   print(p2)
   dev.off()
 
