@@ -1,0 +1,45 @@
+---
+title: 
+author: 
+date:
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message=F)
+library(gplots) 
+library(ggplot2)
+library(ggrepel)
+library(viridis)
+library(tidyverse)
+library(lemon)
+library(ensembldb)
+library(EnsDb.Hsapiens.v86)
+library(gt)
+```
+
+```{r, include=FALSE}
+
+#establish table, csvs from fig_5F.R
+
+pulse <- read_csv("~/dosage_manuscript/figure_5/pulse_inde_dep_sites.csv")
+pulse$nascent_p3f_status <- pulse$p3f_status
+
+chase <- read_csv("~/dosage_manuscript/figure_5/chase_inde_dep_sites.csv")
+chase$mature_p3f_status <- chase$p3f_status
+
+chase_2 <- chase[c("gene_name", "mature_p3f_status")]
+
+pulse_2 <- pulse[c("gene_name", "nascent_p3f_status")]
+
+pulse_chase <- full_join(pulse_2, chase_2, by="gene_name")
+
+pulse_chase[which(is.na(pulse_chase$nascent_p3f_status)),2] <- "not_in_dataset"
+
+pulse_chase[which(is.na(pulse_chase$mature_p3f_status)),3] <- "not_in_dataset"
+
+library(data.table)
+
+fwrite(pulse_chase, file = "~/dosage_manuscript/figure_5/p3f_inde_dep_table.tsv", quote=F, row.names=F, sep="\t", sep2=c("", ",", ""))
+
+```
