@@ -1,7 +1,7 @@
 rm(list = ls())
 graphics.off()
 
-#analyzes dosage RNA-seq data, makes Extended Data Figure 4A, Figure 4A
+#analyzes dosage RNA-seq data, makes Extended Data Figure 8A, Figure 4A, part of Supplemental Table 4
 
 library(DESeq2)
 library(dplyr)
@@ -13,10 +13,10 @@ library(viridis)
 #analysis following https://www.bioconductor.org/packages/release/bioc/vignettes/GSVA/inst/doc/GSVA.html and RNA-seq script from Meng Wang
 
 #information about samples
-sample_sheet <- read.csv("~/dosage_manuscript/csv/Sample.Information.csv")
+sample_sheet <- read.csv("~/Downloads/Sample.Information.csv")
 
 #gene expression matrix
-data <- read.csv("~/dosage_manuscript/csv/gene_count.csv", header = T, row.names = 1)  #list of genes, ensembl format name, and expression by sample, some gene info 
+data <- read.csv("~/Downloads/gene_count.csv", header = T, row.names = 1)  #list of genes, ensembl format name, and expression by sample, some gene info 
 
 # remove mitocondria and GL genes, select protein-coding genes
 data <- data[-grep("GL|MT", data$gene_chr), ]
@@ -83,9 +83,10 @@ p1 <- ggplot(pca_df)+
   xlab("PC1: 89.1% variance")+
   ylab("PC2: 6.3% variance")
 
-png(paste0("~/dosage_manuscript/figure_4/pca_rnaseq_dosage.png" ), width = 8, height = 6, units = "in", res = 200, bg = "white", type = "cairo-png")
+png(paste0("~/Documents/manuscript/revision/supplemental figures/S4/pca_rnaseq_dosage.png" ), width = 6, height = 3.5, units = "in", res = 200, bg = "white", type = "cairo-png")
 p1
 dev.off()
+
 
 rm(dds)
 
@@ -125,16 +126,14 @@ colnames(test) <- c("Control", "75ng/ml", "150ng/ml", "250ng/ml", "500ng/ml", "1
 fit <- lmFit(res, test)
 
 fit <- eBayes(fit, trend = geneSetSizes(res))
-res2 <- decideTests(fit, p.value=0.01) #picked more stringent cut-off
-summary(res2)
-save_me <- which(rowSums(abs(res2)) > 0)
-
-#saveRDS(save_me, "~/dosage_manuscript/rds/dmp_dosage_sig_rows_dosages.rds")
 
 tt <- topTable(fit,  number=Inf)
+write.csv(tt, "~/Documents/manuscript/revision/pairwise_tables/gsva_comp.csv",row.names = T) #for Supplemental Table 4
 
-log10pval <- as.data.frame(cbind(-log10(tt$P.Value), rownames(tt) ))
-log10pval$V1 <- as.numeric(log10pval$V1)
+temp <- rownames(tt[which(tt$adj.P.Val < 0.01),])
+save_me <- which(rownames(res) %in% temp)
+
+saveRDS(temp, "~/Documents/manuscript/revision/dmp_dosage_sig_rows_dosages.rds") #for ordering S8B heatmap
 
 #heatmap
 
@@ -181,13 +180,15 @@ col <- colorRampPalette(rev(brewer.pal(n = 7, name ="RdBu")))(50)
 p2 <- pheatmap(res[save_me,], color=col,cluster_cols = F, angle_col = "315",  
                annotation_col = ann_col1, annotation_colors = ann_col, annotation_names_col=T,show_colnames = F,
           legend_breaks = c(-0.6,-0.4, -0.2, 0, 0.2,0.4,0.6), legend_labels = c("-0.6","-0.4","-0.2","0","0.2", "0.4","0.6"),main="",
-          heatmap_legend_param = list(title=as.character("Scaled\nexpression"), direction="horizontal",title_position = "topcenter"),
-          cellwidth = 15
+          heatmap_legend_param = list(title=as.character("Scaled\nexpression"), direction="vertical",title_position = "topcenter"),
+          cellwidth = 9, cellheight = 9 
 )
 
-#save for use in S4B
-# saveRDS(row_order, "~/dosage_manuscript/rds/dmp_dosage_row_order_dosages.rds")
+#save for use in S8B
+p3 <- pheatmap::pheatmap(res[save_me,], color=col,cluster_cols = F)
+row_order <- p3[[1]]$order
+saveRDS(row_order, "~/Documents/manuscript/revision/dmp_dosage_row_order_dosages.rds")
 
-png(paste0("~/dosage_manuscript/figure_4/kmeans_6_heatmap_102224.png" ), width = 10, height = 8, units = "in", res = 200, bg = "white", type = "cairo-png")
-draw(p2, heatmap_legend_side = "bottom", annotation_legend_side = "left")
+png(paste0("~/Documents/gsva_051126.png" ), width = 12, height = 8, units = "in", res = 200, bg = "white", type = "cairo-png")
+draw(p2, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
 dev.off()

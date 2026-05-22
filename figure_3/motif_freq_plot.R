@@ -1,4 +1,4 @@
-#clear workspace
+#clear workspace 
 rm(list = ls())
 graphics.off()
 
@@ -14,7 +14,7 @@ library(ensembldb)
 library(EnsDb.Hsapiens.v86)
 library(RColorBrewer)
 
-#Extended Data Figure 3E
+#Extended Data Figure 7D
 
 #list prefixes for categories of peaks for which to plot motifs--within same vector if you want them plotted together, each item in list a separate plot
 plots_list <- list(
@@ -228,32 +228,33 @@ if("Zf" %in% all_motif_types){
     geom_boxplot(aes(color=type_only))+
     geom_jitter(aes(color=type_only), alpha=0.5)+
     scale_color_manual(values= col.v , drop=F)+
-    theme_classic(base_size=14)+
-    theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1),plot.title = element_text(hjust=0.5), strip.text = element_text(size=12))+
+    theme_classic(base_size=25)+
+    theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1),plot.title = element_text(hjust=0.5), strip.text = element_text(size=20), panel.spacing.y = unit(rep(0.1,length(plots.v)-1), "lines"))+
     labs(x="Motif type",y="Percent P3F sites with motif",title="")+
      guides(color = "none") +
-    facet_rep_wrap(vars(sample_name), labeller=labeller(sample_name = new.labs), ncol=1) 
+    facet_wrap(vars(sample_name), labeller=labeller(sample_name = new.labs), ncol=1, scales="free_y") 
 
   #plot dimensions based on number of plots
   if(length(plots.v) == 6){
-    height_var1 <- 20
-    height_var2 <- 12
+    height_var2 <- 15
+    width_var <- 5.5
   }
   if(length(plots.v) == 5){
-    height_var1 <- 17
-    height_var2 <- 10
+    height_var2 <- 12.3
+    width_var <- 4.5
   }
   if(length(plots.v) == 4){
-    height_var1 <- 14
-    height_var2 <- 8
+    height_var2 <- 10
+    width_var <- 5
   }
   if(length(plots.v) == 3){
-    height_var1 <- 11
-    height_var2 <- 7.5
+    height_var2 <- 9
+    width_var <- 5
   }
 
+
   #save plot
-  png(paste0("~/dosage_manuscript/figure_3/",file_var[t], "_freq_vs_motif_type_nolabel_filtered_type_toplabel.png" ), width = 4, height = height_var2, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+  png(paste0("~/dosage_manuscript/figure_3/",file_var[t], "_freq_vs_motif_type_nolabel_filtered_type_toplabel.png" ), width =  width_var, height = height_var2, units = "in", res = 200, bg = "transparent", type = "cairo-png")
   print(p2)
   dev.off()
 

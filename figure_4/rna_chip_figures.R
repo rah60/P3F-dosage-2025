@@ -1,7 +1,7 @@
 rm(list = ls())
 graphics.off()
 
-#plot Figure 4B, also establishes clusters used in extended data figure 3
+#plot Figure 4B, also establishes clusters used in extended data figure 9
 
 library(tidyverse)
 library(pheatmap)
@@ -127,10 +127,10 @@ library(ComplexHeatmap)
 heatmap_var <- pheatmap(clustered_df_3, color=col,cluster_cols=F, cluster_rows=F, show_rownames=F,
        breaks = breakList, annotation_row = genes_clusters1, annotation_colors = ann_col, annotation_names_row=F,
        labels_col = as.character(col_names), angle_col = "315", heatmap_legend_param = list(title=as.character("Scaled\nexpression"), legend_height = unit(4,"cm")) , 
-       fontsize = 14, row_split = genes_clusters1$Cluster,
+       fontsize = 20, row_split = genes_clusters1$Cluster,
        cellwidth=40 )
 
-png( paste0("~/dosage_manuscript/figure_4/heatmap_kmeans6_subset50kb_cutoff.png"), width = 5, height = 10, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png( paste0("~/dosage_manuscript/figure_4/heatmap_kmeans6_subset50kb_cutoff_revision.png"), width = 5, height = 10, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 draw(heatmap_var)
 dev.off()
 
@@ -172,10 +172,10 @@ plot_gene_sets <- function(gene_sets, num_sets = 10, fill_col="black", plot_titl
     p1 <- ggplot(select_20) +
         geom_col(aes(x=factor(Term, level=order.v), y=log10_adj_pval, fill="blank"))+
         coord_flip()+
-        theme_classic(base_size=16)+
+        theme_classic(base_size=25)+
         scale_fill_manual(values=fill_col)+
         scale_y_continuous(expand = c(0,0))+
-        labs(x= "Gene sets" , y="-Log10 adjusted p-value", title=plot_title)+
+        labs(x= "Gene sets" , y="-Log10 adjusted\np-value", title=plot_title)+
         guides(fill="none")
 
     return(p1)
@@ -185,10 +185,12 @@ plot_gene_sets <- function(gene_sets, num_sets = 10, fill_col="black", plot_titl
 col <- brewer.pal(n = length(unique(genes_clusters1$Cluster)), name ="Paired")
 
 enriched_clust_1 <- enrichr(enrich_genes[which(enrich_genes$cluster == 1),2], dbs_to_use)
+enriched_clust_1[["MSigDB_Hallmark_2020"]][which(enriched_clust_1[["MSigDB_Hallmark_2020"]] == "Epithelial Mesenchymal Transition"),1] <- "EMT"
 
 clust_1 <- plot_gene_sets(enriched_clust_1[["MSigDB_Hallmark_2020"]], fill_col=col[1], plot_title = "Cluster 1")
 
 enriched_clust_2 <- enrichr(enrich_genes[which(enrich_genes$cluster == 2),2], dbs_to_use)
+enriched_clust_2[["MSigDB_Hallmark_2020"]][which(enriched_clust_2[["MSigDB_Hallmark_2020"]] == "Epithelial Mesenchymal Transition"),1] <- "EMT"
 
 clust_2 <- plot_gene_sets(enriched_clust_2[["MSigDB_Hallmark_2020"]], fill_col=col[2], plot_title = "Cluster 2")
 
@@ -209,13 +211,13 @@ enriched_clust_6 <- enrichr(enrich_genes[which(enrich_genes$cluster == 6),2], db
 clust_6 <- plot_gene_sets(enriched_clust_6[["MSigDB_Hallmark_2020"]],fill_col=col[6], plot_title = "Cluster 6")
 
 #plot in two pngs so they can be easily arranged around heatmap
-png( paste0("~/dosage_manuscript/figure_4/hallmarks_plot_1_kmeans6_subset50kb_cutoff.png"), width = 6, height = 12, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png( paste0("~/dosage_manuscript/figure_4/hallmarks_plot_1_kmeans6_subset50kb_cutoff_revision.png"), width = 7.3, height = 13.5, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(
 plot_grid(clust_2, clust_3, clust_4, ncol=1)
 )
 dev.off()
 
-png( paste0("~/dosage_manuscript/figure_4/hallmarks_plot_2_kmeans6_subset50kb_cutoff.png"), width = 6, height = 12, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png( paste0("~/dosage_manuscript/figure_4/hallmarks_plot_2_kmeans6_subset50kb_cutoff_revision.png"), width = 7.3, height = 13.5, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(
 plot_grid(clust_1, clust_5, clust_6, ncol=1)
 )

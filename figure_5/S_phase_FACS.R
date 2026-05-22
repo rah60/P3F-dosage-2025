@@ -24,39 +24,34 @@ data_plus <- data[which(data$edu_status=="plus"),]
 res.aov <- aov(percent ~ doxycycline, data=data_plus)
 summary(res.aov)
 
-TukeyHSD(res.aov) #only 0 and 500 are significantly different, 0.0279
+TukeyHSD(res.aov) #0,500 0.000906; 0,75 0.0283; 75,500 0.0254
 
 #significance testing for edu-
 data_minus <- data[which(data$edu_status=="minus"),]
 res.aov <- aov(percent ~ doxycycline, data=data_minus)
 summary(res.aov)
 
-TukeyHSD(res.aov) #again, 0 and 500 are significantly different, 0.0279
+TukeyHSD(res.aov) #0,500 0.000906; 0,75 0.0283; 75,500 0.0254
 
-#process data for plotting
-data_sum <- data %>% #summarize to get mean & std dev & standard error
-  group_by(edu_status, doxycycline) %>%
-  summarise(sd=sd(percent), mean=mean(percent), se=sd(percent)/sqrt(2))
+data_sum <- data[which(data$edu_status == "plus"),]
 
-data_sum <- data_sum[which(data_sum$edu_status == "plus"),]
-
-p1 <- ggplot(data_sum, aes(x=factor(doxycycline, c("0","75","500")), y=mean, fill=doxycycline ))+ 
-  geom_bar(stat="identity", position=position_dodge(width=0.7), width=0.7)+
-  labs(x="PAX3::FOXO1 induction level \n(doxycycline dosage, ng/mL)", y="Percent S phase cells in population", fill="")+ #change cell type label
-  geom_errorbar( aes(ymin=mean-se, ymax=mean+se),
-                 width=0.3, position = position_dodge(width=0.7) )+
-  scale_y_continuous(expand = c(0,0), limits=c(0,40))+
-  theme_classic(base_size = 25)+
-  scale_fill_manual(values=col_3, limits = c("0","75","500"))+
+p1 <- ggplot(data_sum, aes(x=factor(doxycycline, c("0","75","500")), y=percent, color=doxycycline ))+ 
+  geom_boxplot(width=0.7, outliers=F )+
+  labs(x="PAX3::FOXO1 induction level\n(doxycycline dosage, ng/mL)", y="Percent S phase\ncells in population", fill="")+ #change cell type label
+  geom_jitter(height=0, width=0.1,size=2)+
+  scale_y_continuous(expand = c(0,0), limits=c(0,50))+
+  theme_classic(base_size = 35)+
+  scale_color_manual(values=col_3, limits = c("0","75","500"))+
   theme(plot.title=element_text(hjust=0.5), legend.position = "none")
 
-p2 <- p1 + geom_signif(comparisons = list(c("0","500")), map_signif_level = T,
-                 annotations = c("*"),
-                 y_position = c(35),
+p2 <- p1 + geom_signif(comparisons = list(c("0","500"),c("0","75"),c("75","500")), map_signif_level = T,
+                 annotations = c("***","*","*"),
+                 y_position = c(38,43, 46),
                  textsize = 7,
-                 size=1)
+                 size=1,
+                 color="black")
 
-png("~/dosage_manuscript/figure_5/EdU_DMP.png", width = 9, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_5/EdU_DMP_updated.png", width = 9, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p2)
 dev.off()
 

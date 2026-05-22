@@ -3,7 +3,7 @@
 #clear workspace
 rm(list = ls())
 graphics.off()
-
+ 
 library(gplots)
 library(ggplot2)
 library(ggrepel)
@@ -14,7 +14,7 @@ library(ensembldb)
 library(EnsDb.Hsapiens.v86)  
 library(RColorBrewer)
 
-#Extended Data Figure 3C
+#Extended Data Figure 9A, part of Supplemental Table 2
 
 #list prefixes for categories of peaks for which to plot motifs--within same vector if you want them plotted together, each item in list a separate plot
 plots_list <- list(c("cluster_1","cluster_2", "cluster_3","cluster_4","cluster_5","cluster_6")
@@ -207,40 +207,28 @@ if("Zf" %in% all_motif_types){
   
   results_df$sample_name <- factor(results_df$sample_name, levels=compare_dosage_0) #this fixes ordering of plots
 
-  #plot with factor names
-  p1 <- ggplot(results_df, aes(x=type_only, y=minus_Log.P.value))+
-    geom_point(aes(color=type_only), alpha=0.5)+
-    scale_color_manual(values= col.v , drop=F)+
-    theme_classic(base_size=20)+
-    theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1),plot.title = element_text(hjust=0.5), strip.text = element_text(size=20))+
-    labs(x="Motif type",y="-log10(p-value)",title="")+
-    geom_text_repel(aes(color=type_only, label=name_only), box.padding = 0.25, show.legend = F, max.overlaps=nrow(subset_motifs)) +
-    guides(color = "none") +
-    facet_rep_wrap(vars(sample_name), labeller=labeller(sample_name = new.labs), ncol=1, scales="free_y") #need to convert this to facet_wrap? to switch labels to top at least for some plots
-
 #boxplots without factor names
-  p2 <- ggplot(results_df, aes(x=type_only, y=minus_Log.P.value))+
+ p2 <-  ggplot(results_df, aes(x=type_only, y=minus_Log.P.value))+
     geom_boxplot(aes(color=type_only))+
     geom_jitter(aes(color=type_only), alpha=0.5)+
     scale_color_manual(values= col.v , drop=F)+
-    theme_classic(base_size=14)+
-    theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1),plot.title = element_text(hjust=0.5), strip.text = element_text(size=12))+
+    theme_classic(base_size=25)+
+    theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1),plot.title = element_text(hjust=0.5), strip.text = element_text(size=20), panel.spacing.y = unit(rep(0.1,length(plots.v)-1), "lines"))+
     labs(x="Motif type",y="-log10(p-value)",title="")+
      guides(color = "none") +
-    facet_rep_wrap(vars(sample_name), labeller=labeller(sample_name = new.labs), ncol=1, scales="free_y") 
+    facet_wrap(vars(sample_name), labeller=labeller(sample_name = new.labs), ncol=1, scales="free_y") 
 
   #plot dimensions based on number of plots
   if(length(plots.v) == 6){
-    height_var1 <- 24
-    height_var2 <- 12
+    height_var2 <- 15
+    width_var <- 5.5
   }
-  
-  png(paste0("~/dosage_manuscript/figure_4/",file_var[t], "_pval_vs_motif_type_filtered_type_toplabel.png" ), width = 9, height = height_var1, units = "in", res = 200, bg = "transparent", type = "cairo-png")
-  print(p1)
-  dev.off()
 
-  png(paste0("~/dosage_manuscript/figure_4/",file_var[t], "_pval_vs_motif_type_nolabel_filtered_type_toplabel.png" ), width = 4, height = height_var2, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+  png(paste0("~/dosage_manuscript/figure_4/",file_var[t], "_pval_vs_motif_type_nolabel_filtered_type_toplabel.png" ), width = width_var, height = height_var2, units = "in", res = 200, bg = "transparent", type = "cairo-png")
   print(p2)
   dev.off()
+
+#for Supplemental Table 2
+ write.table(results_df, paste0("~/dosage_manuscript/figure_4/motif_tables/",file_var[t],".tsv"), quote=F, row.names=F, sep="\t" )
 
 } #end for loop over plots_list

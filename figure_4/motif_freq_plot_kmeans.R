@@ -14,7 +14,7 @@ library(ensembldb)
 library(EnsDb.Hsapiens.v86)
 library(RColorBrewer)
 
-#Extended Data Figure 3D
+#Extended Data Figure 9B
 
 plots_list <- list(c("cluster_1","cluster_2", "cluster_3","cluster_4","cluster_5","cluster_6")
           )
@@ -207,22 +207,22 @@ if("Zf" %in% all_motif_types){
   results_df$sample_name <- factor(results_df$sample_name, levels=compare_dosage_0) #this fixes ordering of plots
  
  #boxplots without factor names
-  p2 <- ggplot(results_df, aes(x=type_only, y=X..of.Target.Sequences.with.Motif))+
+   p2 <- ggplot(results_df, aes(x=type_only, y=X..of.Target.Sequences.with.Motif))+
     geom_boxplot(aes(color=type_only))+
     geom_jitter(aes(color=type_only), alpha=0.5)+
     scale_color_manual(values= col.v , drop=F)+
-    theme_classic(base_size=14)+
-    theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1),plot.title = element_text(hjust=0.5), strip.text = element_text(size=12))+
+    theme_classic(base_size=25)+
+    theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1),plot.title = element_text(hjust=0.5), strip.text = element_text(size=20), panel.spacing.y = unit(rep(0.1,length(plots.v)-1), "lines"))+
     labs(x="Motif type",y="Percent P3F sites with motif",title="")+
      guides(color = "none") +
-    facet_rep_wrap(vars(sample_name), labeller=labeller(sample_name = new.labs), ncol=1) 
+    facet_wrap(vars(sample_name), labeller=labeller(sample_name = new.labs), ncol=1, scales="free_y") 
 
-   if(length(plots.v) == 6){
-    height_var1 <- 24
-    height_var2 <- 12
+    if(length(plots.v) == 6){
+    height_var2 <- 15
+    width_var <- 5.5
   }
   
-  png(paste0("~/dbt_dosage_two_reps/clusters/",file_var[t], "_freq_vs_motif_type_nolabel_filtered_type_toplabel.png" ), width = 4, height = height_var2, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+  png(paste0("~/dosage_manuscript/figure_4/",file_var[t], "_freq_vs_motif_type_nolabel_filtered_type_toplabel.png" ), width = width_var, height = height_var2, units = "in", res = 200, bg = "transparent", type = "cairo-png")
   print(p2)
   dev.off()
 

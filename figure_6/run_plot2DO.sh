@@ -6,7 +6,7 @@
 
 #need plot2DO package to run this script, place script in plot2DO-master directory once downloaded
 
-#Figure 6D & E, Extended Data Figure 5D
+#Figure 6D & E, Extended Data Figure 15D, E
 
 ml purge 
 

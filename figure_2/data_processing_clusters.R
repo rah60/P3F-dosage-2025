@@ -2,6 +2,7 @@ rm(list = ls())
 graphics.off()
 
 #documents the iterative manual process of annotating the single cell clusters
+#Ambuj then took the annotated Seurat objects & further analyzed then & updated the clusters
 
 library(Seurat)
 library(ggplot2)
@@ -42,6 +43,14 @@ proliferation_markers <- as.vector(danielli_markers$Proliferative_markers)
 proliferation_markers  <- proliferation_markers[!is.na(proliferation_markers)]
 differentiated_markers <- as.vector(danielli_markers$Differentiated_markers) 
 differentiated_markers  <- differentiated_markers[!is.na(differentiated_markers)]
+
+colnames(danielli_markers) <- c("Progenitor","Proliferative","Differentiated")
+markers_long <- danielli_markers %>% 
+      pivot_longer(cols=c(Progenitor,Differentiated,Proliferative), names_to = "Annotation" , values_to = "Gene" )
+markers_long <- markers_long[,c(2,1)]
+markers_long <- markers_long[-which(is.na(markers_long$Gene)),]
+
+write_csv(markers_long, "~/Danielli_2024_RMS_markers.csv")
 
 #divide data into subsets
 Idents(dbt) <- "sample_names"

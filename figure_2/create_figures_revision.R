@@ -14,12 +14,14 @@ library(ggpubr)
 library(aplot)
 library(rstatix)
 library(lemon)
+library(qs)
 
 #load in short timepoints dataset
-dbt_1 <- readRDS("~/dosage_manuscript/rds/short_timepts_batchcorrection_rna_namedmergedclusters_2.rds")
+dbt_1 <- qread("/home/gdstantonlab/lab/sharing/Ambuj/PAX3_FOXO1/2026/PAX3_FOXO1_Rachel_March13/Phase_8_24_hrs/seurat_induction_8_24_hrs_annotated.qs")
 
 #load in 2 week time points dataset
-dbt_2 <- readRDS("~/dosage_manuscript/rds/dosages_2wks_batchcorrection_rna_subclustered_named1.rds")
+dbt_2 <- qread("/home/gdstantonlab/lab/sharing/Ambuj/PAX3_FOXO1/2026/PAX3_FOXO1_Rachel_March13/Phase1/seurat_phase1_annotated.qs")
+dbt_2$sample_names <- factor(dbt_2$sample_names, levels= c("0 ng/mL, 2 wks","75 ng/mL, 2 wks","500 ng/mL, 2 wks"))
 
 #Dimplots 8, 24 hours and 2 weeks   colors: muted tol color scheme
 tol_muted <- c('#332288','#88CCEE','#44AA99','#117733','#999933','#DDCC77','#CC6677','#882255','#AA4499')
@@ -36,7 +38,7 @@ p1 <- DimPlot(dbt_1, cols=c(tol_muted[2],tol_muted[9]), pt.size=0.8 ) + theme_cl
 #DimPlot(dbt_1, cols=c(tol_muted[2],tol_muted[9]), pt.size=0.8, split.by= "sample_names" ) + theme_classic(base_size = 25) + guides(colour = guide_legend(override.aes = list(size=4))) 
 
 
-png("~/dosage_manuscript/figure_2/short_timept_dimplot.png", width = 9, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_2/short_timept_dimplot_revised.png", width = 9, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p1)
 dev.off()
 
@@ -45,28 +47,33 @@ dev.off()
 
 
 #Figure 2B
+Idents(dbt_2) <- "cell_label"
 
-metadata <- dbt_2$subclusters_2
+metadata <- dbt_2$cell_label
 metadata2 <- sapply(str_replace(metadata, "PAX3-FOXO1","PAX3::FOXO1"), "[",1)
+metadata2 <- sapply(str_replace(metadata2, "Ground-state","Ground state"), "[",1)
 names(metadata2) <- names(metadata)
-metadata2 <- factor(metadata2, levels = c("Cycling","Progenitor-like", "Ground state","AP-1 expressing","Differentiated","PAX3::FOXO1-specific"))
-dbt_2$subclusters_2 <- metadata2
+metadata2 <- factor( metadata2, levels= c("Progenitor-like","Cycling","Ground state","PAX3::FOXO1-specific","Differentiated"))
+dbt_2$subclusters_3 <- metadata2
 
-Idents(dbt_2) <- "subclusters_2"
+Idents(dbt_2) <- "subclusters_3"
 
-p2 <- DimPlot(dbt_2, cols=c(tol_muted[1],tol_muted[3:5],tol_muted[7:8]),pt.size=0.8 ) + theme_classic(base_size = 25) + guides(colour = guide_legend(override.aes = list(size=4)))
+#correct order of colors
+cols_dbt2 <-  c(tol_muted[3], tol_muted[1],tol_muted[4],tol_muted[8],tol_muted[7])
 
-DimPlot(dbt_2, cols=c(tol_muted[1],tol_muted[3:5],tol_muted[7:8]),pt.size=0.8, split.by="sample_names" ) + theme_classic(base_size = 25) + guides(colour = guide_legend(override.aes = list(size=4)))
+p2 <- DimPlot(dbt_2, cols=cols_dbt2, pt.size=0.8 ) + theme_classic(base_size = 25) + guides(colour = guide_legend(override.aes = list(size=4)))
+
+#DimPlot(dbt_2, cols=cols_dbt2, pt.size=0.8, split.by="sample_names" ) + theme_classic(base_size = 25) + guides(colour = guide_legend(override.aes = list(size=4)))
 
 
-png("~/dosage_manuscript/figure_2/long_timept_dimplot.png", width = 10, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_2/long_timept_dimplot_revised.png", width = 10, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p2)
 dev.off()
 
 
 #Figure 2D
 
-metadata <- dbt_2$subclusters_2
+metadata <- dbt_2$subclusters_3
 metadata2 <- sapply(str_replace(metadata, "expressing","exp."), "[",1)
 metadata2 <- sapply(str_replace(metadata2, "PAX3::FOXO1","P3F"), "[",1)
 metadata2 <- names(metadata2)
@@ -74,15 +81,9 @@ dbt_2$abbrev_cluster_names <- metadata2
 
 n_cells <- FetchData(dbt_2, #look at cells per sample in each cluster
                      vars=c("abbrev_cluster_names","sample_names")) %>%
-          count(abbrev_cluster_names, sample_names, name="value") #%>% #not sure why I had this here, can remove?
-          #tidyr::spread(abbrev_cluster_names, n) %>%
-          #pivot_longer(cols=c("Cycling","Progenitor-like", "Ground state","AP-1 exp.", "Differentiated", "P3F-specific"), names_to="cluster")
+          count(abbrev_cluster_names, sample_names, name="value") 
 
-# n_totals <- FetchData(dbt_2, #look at cells per sample
-#                      vars=c("abbrev_cluster_names")) %>%
-#           count(abbrev_cluster_names) 
 
-#temp test version
 n_totals <- FetchData(dbt_2, #look at cells per sample
                      vars=c("sample_names")) %>%
           count(sample_names) 
@@ -97,34 +98,20 @@ for(i in 1:nrow(n_cells)){
 
 n_cells$percent <- n_cells$value/n_cells$cluster_total
 
-#temp test figure
 p3 <- ggplot(n_cells, aes( x=sample_names, fill=sample_names, y=percent ))+
   geom_bar(stat = "identity", position = "dodge")+
-  labs(x="Sample",y="Fraction of sample",fill="Sample")+
+  labs(x="Doxycycline (ng/mL),\n2 week induction",y="Fraction of sample",fill="Sample")+
   theme_classic(base_size = 20)+
-  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1),legend.position = "none")+
-  scale_y_continuous(expand = c(0,0))+
-  facet_rep_wrap(vars(abbrev_cluster_names), nrow=3,scales="free" )+ #take away scales="free" to get _2 version
-  scale_fill_manual(values = col_3)
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1,size=18),legend.position = "none")+
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1), add = 0 ) )+ #don't expand y-axis on bottom, expand y-axis on top by 10%
+  facet_wrap(vars(abbrev_cluster_names), nrow=3,scales="free_y" )+ 
+  scale_fill_manual(values = col_3)#+
+  #theme(panel.spacing = unit(0, "lines"))
 
-png("~/dosage_manuscript/figure_2/long_timept_cluster_distribution_percent_3.png", width = 6, height = 11, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_2/long_timept_cluster_distribution_percent_revised2.png", width = 6.4, height = 7.5, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+#pdf("~/dosage_manuscript/figure_2/long_timept_cluster_distribution_percent_revised2.pdf", width = 8.5, height = 10, bg = "transparent")
 print(p3)
 dev.off()
-
-p3 <- ggplot(n_cells, aes( x=sample_names, fill=sample_names, y=percent ))+
-  geom_bar(stat = "identity", position = "dodge")+
-  labs(x="Sample",y="Fraction of cluster",fill="Sample")+
-  theme_classic(base_size = 20)+
-  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1),legend.position = "none")+
-  scale_y_continuous(expand = c(0,0))+
-  facet_rep_wrap(vars(cluster), nrow=3, )+
-  scale_fill_manual(values = col_3)
-
-png("~/dosage_manuscript/figure_2/long_timept_cluster_distribution_percent.png", width = 6, height = 8, units = "in", res = 200, bg = "transparent", type = "cairo-png")
-print(p3)
-dev.off()
- 
-
 
 #Figure 2C
 
@@ -144,16 +131,20 @@ for(i in 1:length(dbt_names)){
 colnames(cell_cycle.df) <- c("Fraction", "Sample","Phase")
 cell_cycle.df$Fraction <- as.numeric(cell_cycle.df$Fraction)
 cell_cycle.df$Sample <- factor(cell_cycle.df$Sample, levels= c("0 ng/mL, 2 wks","75 ng/mL, 2 wks","500 ng/mL, 2 wks"))
+new_sample <- c("0 ng/mL, 2 wks" = "0","75 ng/mL, 2 wks" = "75","500 ng/mL, 2 wks" = "500")
 
 p4 <- cell_cycle.df %>%
   ggplot(aes( x=factor(Phase,level=c("G1 phase","S phase","G2/M phase")), fill=Sample, y=Fraction ))+
   geom_bar(stat = "identity", position = position_dodge())+
   labs(x="Cell cycle phase", y="Fraction of cells in phase")+
-  theme_classic(base_size = 16)+
+  theme_classic(base_size = 20)+
+  theme(axis.text.x = element_text(size=14))+
   scale_y_continuous(expand = c(0,0),limits=c(0,0.8))+
-  scale_fill_manual(values=col_3)
+  scale_x_discrete(labels=c("G1","S","G2/M"))+
+  scale_fill_manual(values=col_3)+
+  facet_wrap(vars(Sample), ncol=3, labeller=labeller(Sample=new_sample))
 
-png("~/dosage_manuscript/figure_2/long_timept_cell_cycle_distribution.png", width = 7, height = 4, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_2/long_timept_cell_cycle_distribution_revised_2.png", width = 7.5, height = 4, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p4)
 dev.off()
 
@@ -197,62 +188,12 @@ p7 <- ggplot(dbt_2_scores,aes(y=Differentiated_Score3, x=sample_names, color=sam
     theme_classic(base_size = 20)+
     scale_color_manual(values=col_3)+
     labs(y="Differentiated Score")+
-    theme(axis.title.x = element_blank(),axis.text.x = element_text(angle=45, vjust=1, hjust=1),axis.title.y=element_text(size=16))+
+    theme(axis.title.x = element_blank(),axis.text.x = element_text(angle=45, vjust=1, hjust=1,size=18),axis.title.y=element_text(size=16))+
     scale_y_continuous(limits=c(min(dbt_2_scores$Differentiated_Score3),1.7))+
     geom_signif(comparisons = my_comparisons, map_signif_level = TRUE, annotation=c("****","****","****"), y_position=c(1.1,1.3,1.55), show.legend=F, color = "black")
 
-png("~/dosage_manuscript/figure_2/long_timept_scores.png", width = 3.5, height = 8, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_2/long_timept_scores_revised.png", width = 3.5, height = 8, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p5 / p6 / p7)
 dev.off() 
 
-
-#Figure 2F
-#heatmap of aggregate CRTF expression by cluster
-
-col <- rev(brewer.pal(11,"RdBu"))
-
-core_circ_crispr <- c("MYOD1","PAX3","SOX8","RARA","PITX3","MYCN","MYOG","FOSL2","ZNF410","RELA","SNAI1","SREBF1","PKNOX2")
-
-core_circuitry_reorder <- c("ZNF410","FOSL2","PITX3","SOX8","PAX3","RARA","MYCN","MYOG","SREBF1","RELA","MYOD1","SNAI1","PKNOX2")
-
-plot_dep <- data.frame(cbind(core_circuitry_reorder, c(-0.25,-0.64,-1.05,-2.81,-5.86,-1.49,-1.04,-1.03, 0.08,-0.22,-7.64,-0.09,0.45)) ) #from Gryder et al
-colnames(plot_dep) <- c("gene","RH4_CRISPR_score")
-plot_dep$RH4_CRISPR_score <- as.numeric(plot_dep$RH4_CRISPR_score)
-
-aggexp <- AggregateExpression(dbt_2,group.by="abbrev_cluster_names", return.seurat = T) %>%
-          FetchData( vars=core_circ_crispr, layer="scale.data")
-
-aggexp_long <- aggexp %>% 
-  rownames_to_column(var="cluster_name") %>%
-  pivot_longer(cols= all_of(core_circ_crispr), names_to="gene", values_to="agg_exp")
-
-aggexp_long <- aggexp_long %>%
-  left_join(plot_dep, by="gene") %>%
-  replace
-
-p8 <- ggplot(aggexp_long)+
-  geom_raster(aes(x=cluster_name,y=reorder(gene, RH4_CRISPR_score, decreasing=T),fill=agg_exp))+
-  scale_fill_gradientn(colors=col, limits = c(-2.1,2.1))+
-  theme_classic(base_size=20)+
-  scale_y_discrete(expand = c(0,0))+
-  scale_x_discrete(expand = c(0,0), position="top")+
-  theme(axis.text.x = element_text(angle=45, hjust=-0.05), plot.margin=unit(c(0,0,0,0),"inches"), axis.title.y=element_blank())+
-  labs(x="Cluster", fill="", y="")
-
-
-p9 <- ggplot(plot_dep)+
-      geom_col(aes(x=RH4_CRISPR_score, y=reorder(gene, RH4_CRISPR_score, decreasing=T) ))+
-      labs(y="",x="RH4 CRISPR score,\n Gryder et al 2019")+
-      theme_classic(base_size=20) +
-      scale_y_discrete(expand = c(0,0))+
-      scale_x_continuous(limits = c(-8,1))+
-      theme(axis.text.y = element_blank(), axis.ticks.y=element_blank(),axis.line.y=element_blank(),plot.margin=unit(c(0,0,0,0),"inches"),axis.title.y=element_blank())+
-      geom_vline(aes(xintercept=0))+
-      ylim2(p8) #to align to y axis of p8
-
-p10 <- p8 %>% insert_left(p9, width=0.6)
-
-png("~/dosage_manuscript/figure_2/long_timept_crtf_heatmap.png", width = 10, height = 10, units = "in", res = 200, bg = "transparent", type = "cairo-png")
-print(p10)
-dev.off()
 

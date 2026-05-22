@@ -1,7 +1,7 @@
 rm(list = ls()) 
 graphics.off()
 
-#categorize repliATAC-seq peaks, pulse to use in Fig 5/6
+#categorize repliATAC-seq peaks, pulse to use in Fig 5/6, plots Figure 5C left
 
 library(GenomicRanges)
 library(tidyverse)
@@ -111,7 +111,7 @@ select_categories <- c("0p", "75p","500p" , "0p_75p_500p")
 combo_two <- all_peaks[which(all_peaks$category_string %in% select_categories),]
 
 n_cat <- combo_two %>%
-  count(category_string)
+  dplyr::count(category_string)
 
 #plot total & unique peaks
 dosage <- c("0","75","500","common")
@@ -130,22 +130,6 @@ names(col.v) <- dosage
 
 ########same y-axis as chase
 
-#unique peaks
-#Extended Data Figure 4A, left
-
-p1 <- ggplot(dbt.df)+
-  geom_col(aes(x=dosage, y=unique_peak_count, fill=dosage), show.legend = F )+ 
-  scale_fill_manual(values = col.v)+ 
-  scale_x_discrete(limits =  c("0","75","500","common"), labels=c("unique to 0 ng/mL","unique to 75 ng/mL","unique to 500 ng/mL","common") )+
-  labs(y="Accessible sites\nin nascent chromatin",x="", title="Nascent chromatin (10 min)")+
-  scale_y_continuous(expand = c(0,0), limits=c(0,9331))+
-  theme_classic(base_size = 30)+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),plot.title = element_text(hjust = 0.5))
-
-png("~/dosage_manuscript/figure_5/dbt_mycn_ip3f_unique_peak_pulse_newscale.png", width = 9, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
-print(p1)
-dev.off()
-
 #Figure 5C, left
 
 #total peaks
@@ -153,11 +137,11 @@ p2 <- ggplot(dbt.df)+
   geom_col(aes(x=dosage, y=total_peak_count, fill=dosage), show.legend = F )+
   scale_fill_manual(values = col.v[1:3])+
   scale_x_discrete(limits =  c("0","75","500"))+
-  labs(y="Accessible sites\nin nascent chromatin",x="Doxycycline dose (ng/mL)",title = "Nascent chromatin (10 min)")+
+  labs(y="Accessible sites\nin nascent chromatin",x="Doxycycline (ng/mL)",title = "Nascent chromatin\n(10 min)")+
   scale_y_continuous(expand = c(0,0), limits=c(0,35066))+
   theme_classic(base_size = 30)+
   theme(plot.title = element_text(hjust = 0.5))
 
-png("~/dosage_manuscript/figure_5/dbt_mycn_ip3f_total_peak_pulse_newscale.png", width = 9, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_5/dbt_mycn_ip3f_total_peak_pulse_revision.png", width = 7, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p2)
 dev.off() 

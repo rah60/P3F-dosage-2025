@@ -1,7 +1,7 @@
 rm(list = ls())
 graphics.off()
 
-#plot figures 3B & C, extended data figures 3A, B
+#plot figures 3C & D, extended data figures 7A, B
 
 library(ggplot2)
 library(viridis)

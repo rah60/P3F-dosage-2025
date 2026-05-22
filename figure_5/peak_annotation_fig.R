@@ -9,7 +9,7 @@ library(RColorBrewer)
 library(viridis)
 library(ggrepel)
 
-#Extended Data Figure 4B
+#Extended Data Figure 14B
 #annotations from submit_homer_annotate.sh
 
 #set up for dataframe
@@ -52,24 +52,24 @@ pulse_df <- plot_annotations[which(plot_annotations$dosage %in% pulse_cat),]
 temp1 <- str_replace_all(pulse_df$dosage, "Dox", "") 
 pulse_df$dosage <- factor(str_replace_all(temp1, "_pulse", "") , levels = c("0","75","500"))
 
-#Extended Data Figure 4B, top
+#Extended Data Figure 14B, left
 
 #actual #
 p1 <- ggplot(pulse_df, aes(x=dosage,fill=dosage) )+
   geom_bar(show.legend = FALSE)+
   labs(y="Peak count",x="Doxycycline (ng/mL)", title="")+
   scale_y_continuous(expand = c(0,0))+
-  theme_classic(base_size=20)+
+  theme_classic(base_size=30)+
   scale_fill_manual(values = col.v)+
-  theme(plot.title=element_text(hjust=0.5))+
+  theme(plot.title=element_text(hjust=0.5),)+
   facet_wrap(vars(annotation),labeller = labeller(annotation = new.labs),nrow=2)+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),strip.text = element_text(size=20))
 
-png("~/dosage_manuscript/figure_5/total_peak_annotation_pulse.png", width = 12, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_5/total_peak_annotation_pulse_revision.png", width = 10, height = 6.5, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p1)
 dev.off()
 
-#Extended Data Figure 4B, bottom
+#Extended Data Figure 14B, right
 
 #chase
 chase_cat <- c("Dox0_chase","Dox75_chase","Dox500_chase")
@@ -84,12 +84,12 @@ p2 <- ggplot(chase_df, aes(x=dosage,fill=dosage) )+
   geom_bar(show.legend = FALSE )+
   labs(y="Peak count",x="Doxycycline (ng/mL)", title="")+
   scale_y_continuous(expand = c(0,0))+
-  theme_classic(base_size=20)+
+  theme_classic(base_size=30)+
   scale_fill_manual(values = col.v)+
   theme(plot.title=element_text(hjust=0.5))+
   facet_wrap(vars(annotation), labeller = labeller(annotation = new.labs),nrow=2)+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),strip.text = element_text(size=20))
 
-png("~/dosage_manuscript/figure_5/total_peak_annotation_chase.png", width = 12, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_5/total_peak_annotation_chase_revision.png", width = 10, height = 6.5, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p2)
 dev.off()

@@ -13,7 +13,7 @@ library(cowplot)
 library(enrichR)
 library(ggsignif)
 
-# Figure 5F, Extended Data Figure 4D, set up for Table S2
+# Figure 5F, Extended Data Figure 14C, set up for Table S3
 
 #function for plotting Enrichr output
 plot_gene_sets <- function(gene_sets, num_sets = 10, fill_col="black", plot_title = ""){
@@ -44,10 +44,10 @@ plot_gene_sets <- function(gene_sets, num_sets = 10, fill_col="black", plot_titl
     p1 <- ggplot(select_20) +
         geom_col(aes(x=factor(Term, level=order.v), y=log10_adj_pval, fill="blank"))+
         coord_flip()+
-        theme_classic(base_size=16)+
+        theme_classic(base_size=25)+
         scale_fill_manual(values=fill_col)+
         scale_y_continuous(expand = c(0,0))+
-        labs(x= "Gene sets" , y="-Log10 adjusted p-value", title=plot_title)+
+        labs(x= "Gene sets" , y="-Log10 adjusted\np-value", title=plot_title)+
         guides(fill="none")
 
     return(p1)
@@ -62,7 +62,7 @@ options(enrichR.base.address="https://amp.pharm.mssm.edu/Enrichr/")
 #choose gene set for Enrichr
 dbs_to_use <- c("MSigDB_Hallmark_2020")
 
-#PULSE, Extended Data Fig 4D
+#PULSE, Extended Data Fig 14C
 
 pulse_peaks <- read.table("~/dosage_manuscript/csv/peak_categories_GR_103024_pulse.tsv",sep="\t")
 
@@ -156,8 +156,9 @@ for(w in 1:nrow(pulse_2)){
 
 pulse_2 <- pulse_2[which(!pulse_2$duplicate_row),]
 
-#Table S2
+#Table S3
 #write.csv(pulse_2, "~/dosage_manuscript/figure_5/pulse_inde_dep_sites.csv", row.names=F)
+pulse_2 <- read.csv("~/dosage_manuscript/figure_5/pulse_inde_dep_sites.csv") #note: had issues reading this in with read_csv and then using in enrichr later on
 
 #prepare for plotting
 pulse_2_long <- pulse_2 %>%
@@ -181,39 +182,39 @@ TukeyHSD(aov_res)
 #0, 500 ***
 
 my_comparisons <- list(c("Control", "X75ng.ml"),c("X500ng.ml", "X75ng.ml"),c("Control", "X500ng.ml"))
-####### need to use actual anova/Tukey res & p-values...will need to use a different fxn to plot this
-
-#Extended Data Figure 4D, left
-
-p1 <- ggplot(p3f_de, aes(x=Dosage, y=Expression, fill = p3f_status))+
-    geom_boxplot(show.legend=F, notch=T, linewidth=1.2)+
-    theme_classic(base_size=16)+
-    scale_fill_manual(values=c("#BB5566"))+
-    labs(title="PAX3::FOXO1 dependent\naccessible sites", x="Doxycycline dosage (ng/ml)", y="Scaled log2 expression")+
-    theme(plot.title = element_text( hjust=0.5),axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=16))+
-    scale_x_discrete(limits =  c("Control","X75ng.ml","X500ng.ml"), labels=c("0","75","500"))+
-    geom_hline(yintercept = 0, linewidth = 1, linetype = 2, color="#DDAA33")+
-    geom_signif(comparisons = my_comparisons, map_signif_level = TRUE, annotation=c("**","****","****"), y_position=c(2,2.5,3))
-
-my_comparisons2 <- list(c("Control", "X500ng.ml"))
-
-p2 <- ggplot(p3f_inde, aes(x=Dosage, y=Expression, fill = p3f_status))+
-    geom_boxplot(show.legend=F, notch=T, linewidth =1.2)+
-    theme_classic(base_size=16)+
-    scale_fill_manual(values=c("#004488"))+
-    labs(title="PAX3::FOXO1 independent\naccessible sites", x="Doxycycline dosage (ng/ml)", y="")+
-    theme(plot.title = element_text( hjust=0.5),axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=16))+
-    scale_x_discrete(limits =  c("Control","X75ng.ml","X500ng.ml"), labels=c("0","75","500"))+
-    geom_hline(yintercept = 0, linewidth = 1, linetype = 2, color="#DDAA33")+
-    geom_signif(comparisons = my_comparisons2, map_signif_level = TRUE, annotation=c("***"), y_position=c(2))+
-    ylim2(p1)
-
-p3 <- p1 %>% insert_right(p2) 
 
 
- png(paste0("~/dosage_manuscript/figure_5/pulse_all_repliATAC_sites_in_dep_exp_revised.png" ), width = 7.5, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
-  print(p3)
-  dev.off()
+#Extended Data Figure 14C, left
+
+    p1 <- ggplot(p3f_de, aes(x=Dosage, y=Expression, fill = p3f_status))+
+        geom_boxplot(show.legend=F, notch=T, linewidth=1.2)+
+        theme_classic(base_size=25)+
+        scale_fill_manual(values=c("#BB5566"))+
+        labs(title="P3F dependent\naccessible sites", x="Doxycycline (ng/ml)", y="Scaled log2 expression")+
+        theme(plot.title = element_text( hjust=0.5),axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=20))+
+        scale_x_discrete(limits =  c("Control","X75ng.ml","X500ng.ml"), labels=c("0","75","500"))+
+        geom_hline(yintercept = 0, linewidth = 1, linetype = 2, color="#DDAA33")+
+        geom_signif(comparisons = my_comparisons, map_signif_level = TRUE, annotation=c("**","****","****"), y_position=c(2,2.5,3), textsize=4)
+
+    my_comparisons2 <- list(c("Control", "X500ng.ml"))
+
+    p2 <- ggplot(p3f_inde, aes(x=Dosage, y=Expression, fill = p3f_status))+
+        geom_boxplot(show.legend=F, notch=T, linewidth =1.2)+
+        theme_classic(base_size=25)+
+        scale_fill_manual(values=c("#004488"))+
+        labs(title="P3F independent\naccessible sites", x="Doxycycline (ng/ml)", y="")+
+        theme(plot.title = element_text( hjust=0.5),axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=20))+
+        scale_x_discrete(limits =  c("Control","X75ng.ml","X500ng.ml"), labels=c("0","75","500"))+
+        geom_hline(yintercept = 0, linewidth = 1, linetype = 2, color="#DDAA33")+
+        geom_signif(comparisons = my_comparisons2, map_signif_level = TRUE, annotation=c("***"), y_position=c(2), textsize=4)+
+        ylim2(p1)
+
+    p3 <- p1 %>% insert_right(p2) 
+
+
+    png(paste0("~/dosage_manuscript/figure_5/pulse_all_repliATAC_sites_in_dep_exp_revision.png" ), width = 8, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+    print(p3)
+    dev.off() 
 
 enriched_pulse1 <- enrichr(pulse_2[which(pulse_2$p3f_status  == "P3F_dependent"),25], dbs_to_use)
 
@@ -223,9 +224,9 @@ enriched_pulse2 <- enrichr(pulse_2[which(pulse_2$p3f_status  == "P3F_independent
 
 clust_2 <- plot_gene_sets(enriched_pulse2[["MSigDB_Hallmark_2020"]],  plot_title = "P3F independent", num_sets=5, fill_col="#004488")
 
-#Extended Data Figure 4B, right
+#Extended Data Figure 14C, right
 
-png( paste0("~/dosage_manuscript/figure_5/hallmarks_enrichr_P3F_in_dependent_pulse_plot_revised.png"), width = 5.5, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png( paste0("~/dosage_manuscript/figure_5/hallmarks_enrichr_P3F_in_dependent_pulse_plot_revision.png"), width = 8, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(
 plot_grid(clust_1, clust_2,ncol=1)
 )
@@ -323,8 +324,9 @@ for(w in 1:nrow(chase_2)){
 
 chase_2 <- chase_2[which(!chase_2$duplicate_row),]
 
-#Table S2
+#Table S3
 #write.csv(chase_2, "~/dosage_manuscript/figure_5/chase_inde_dep_sites.csv", row.names=F)
+chase_2 <- read.csv("~/dosage_manuscript/figure_5/chase_inde_dep_sites.csv")
 
 chase_2_long <- chase_2 %>%
                 pivot_longer(cols=c(Control,X75ng.ml,X500ng.ml), names_to = "Dosage", values_to="Expression")
@@ -352,37 +354,38 @@ my_comparisons <- list(c("Control", "X75ng.ml"),c("X500ng.ml", "X75ng.ml"),c("Co
 
 p1 <- ggplot(p3f_de, aes(x=Dosage, y=Expression, fill = p3f_status))+
     geom_boxplot(show.legend=F, notch=T, linewidth=1.2)+
-    theme_classic(base_size=16)+
+    theme_classic(base_size=25)+
     scale_fill_manual(values=c("#BB5566"))+
-    labs(title="PAX3::FOXO1 dependent\naccessible sites", x="Doxycycline dosage (ng/ml)", y="Scaled log2 expression")+
-    theme(plot.title = element_text( hjust=0.5),axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=16))+
+    labs(title="P3F dependent\naccessible sites", x="Doxycycline (ng/ml)", y="Scaled log2 expression")+
+    theme(plot.title = element_text( hjust=0.5),axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=20))+
     scale_x_discrete(limits =  c("Control","X75ng.ml","X500ng.ml"), labels=c("0","75","500"))+
     geom_hline(yintercept = 0, linewidth = 1, linetype = 2, color="#DDAA33")+
-    geom_signif(comparisons = my_comparisons, map_signif_level = TRUE, annotation=c("**","****","****"), y_position=c(2,2.5,3))
+    geom_signif(comparisons = my_comparisons, map_signif_level = TRUE, annotation=c("**","****","****"), y_position=c(2,2.5,3), textsize=4)
 
 my_comparisons2 <- list(c("Control", "X500ng.ml"))
 
 p2 <- ggplot(p3f_inde, aes(x=Dosage, y=Expression, fill = p3f_status))+
     geom_boxplot(show.legend=F, notch=T, linewidth =1.2)+
-    theme_classic(base_size=16)+
+    theme_classic(base_size=25)+
     scale_fill_manual(values=c("#004488"))+
-    labs(title="PAX3::FOXO1 independent\naccessible sites", x="Doxycycline dosage (ng/ml)", y="")+
-    theme(plot.title = element_text( hjust=0.5),axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=16))+
+    labs(title="P3F independent\naccessible sites", x="Doxycycline (ng/ml)", y="")+
+    theme(plot.title = element_text( hjust=0.5),axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=20))+
     scale_x_discrete(limits =  c("Control","X75ng.ml","X500ng.ml"), labels=c("0","75","500"))+
     geom_hline(yintercept = 0, linewidth = 1, linetype = 2, color="#DDAA33")+
-    geom_signif(comparisons = my_comparisons2, map_signif_level = TRUE, annotation=c("**"), y_position=c(2,2.5,3))+
+    geom_signif(comparisons = my_comparisons2, map_signif_level = TRUE, annotation=c("**"), y_position=c(2,2.5,3), textsize=4)+
     ylim2(p1)
 
 p3 <- p1 %>% insert_right(p2) 
 
 
- png(paste0("~/dosage_manuscript/figure_5/chase_all_repliATAC_sites_in_dep_exp_revised.png" ), width = 7.5, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+ png(paste0("~/dosage_manuscript/figure_5/chase_all_repliATAC_sites_in_dep_exp_revision.png" ), width = 8, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
   print(p3)
   dev.off()
 
 #Figure 5F, right
 
 enriched_chase1 <- enrichr(chase_2[which(chase_2$p3f_status  == "P3F_dependent"),25], dbs_to_use)
+enriched_chase1[["MSigDB_Hallmark_2020"]][which(enriched_chase1[["MSigDB_Hallmark_2020"]] == "Epithelial Mesenchymal Transition"),1] <- "EMT"
 
 clust_1 <- plot_gene_sets(enriched_chase1[["MSigDB_Hallmark_2020"]],  plot_title = "P3F dependent", num_sets=5,  fill_col="#BB5566")
 
@@ -390,7 +393,7 @@ enriched_chase2 <- enrichr(chase_2[which(chase_2$p3f_status  == "P3F_independent
 
 clust_2 <- plot_gene_sets(enriched_chase2[["MSigDB_Hallmark_2020"]],  plot_title = "P3F independent", num_sets=5, fill_col="#004488")
 
-png( paste0("~/dosage_manuscript/figure_5/hallmarks_enrichr_P3F_in_dependent_chase_plot_revised.png"), width = 5.5, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png( paste0("~/dosage_manuscript/figure_5/hallmarks_enrichr_P3F_in_dependent_chase_plot_revision.png"), width =8, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(
 plot_grid(clust_1, clust_2,ncol=1)
 )

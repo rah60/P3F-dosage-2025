@@ -2,7 +2,7 @@
 rm(list = ls())
 graphics.off()
 
-#plots Figure 3D, Extended Data Figure 3C using output from submit_homer.sh
+#plots Extended Data Figure 7C using output from submit_homer.sh
 
 library(ggplot2)
 library(dplyr)
@@ -42,26 +42,6 @@ for(i in 1:length(dosage)){
 new.labs <- c("intergenic" , "intron", "TTS","3' UTR","TSS","non-coding","exon","5' UTR") #correct labels
 names(new.labs) <- unique(plot_annotations$annotation)
 
-#Extended Data Figure 3C
-
-p1 <- ggplot(plot_annotations, aes(x=dosage,fill=dosage) )+
-  geom_bar(show.legend = FALSE)+
-  labs(y="Peak count",x="Doxycycline (ng/mL)", title="")+
-  scale_x_discrete(limits = dosage)+
-  scale_y_continuous(expand = c(0,0))+
-   theme_classic(base_size=20)+
-   scale_fill_manual(values = col.v)+
-   theme(plot.title=element_text(hjust=0.5))+
-   facet_wrap(vars(annotation), labeller = labeller(annotation = new.labs),nrow=2)+
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
-png("~/dosage_manuscript/figure_2/total_peak_annotation_color_by_dosage_newscale.png", width = 12, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
-print(p1)
-dev.off()
-
-
-#Figure 3D
-
 #to plot percent of each category, summarize data
 new_ann <- count(plot_annotations, annotation, dosage)
 
@@ -89,9 +69,9 @@ p2 <- ggplot(new_ann, aes(x=dosage,y=percent, fill=dosage) )+
    theme_classic(base_size=20)+
    scale_fill_manual(values = col.v)+
    theme(plot.title=element_text(hjust=0.5))+
-   facet_rep_wrap(vars(annotation), labeller = labeller(annotation = new.labs),nrow=2, scales="free")+
+   facet_rep_wrap(vars(annotation), labeller = labeller(annotation = new.labs),nrow=2)+
     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
-png("~/dosage_manuscript/figure_2/total_peak_annotation_color_by_dosage_percent_3.png", width = 12, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_3/total_peak_annotation_color_by_dosage_percent.png", width = 12, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p2)
 dev.off()

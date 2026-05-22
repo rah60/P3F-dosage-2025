@@ -13,7 +13,7 @@ library(viridis)
 library(cowplot)
 
 #quantifying the plot2DO fragment length distributions in each cluster/dosage
-#Extended Data Figure 5E
+#Extended Data Figure 15E
 
 # file names
 
@@ -91,7 +91,7 @@ col_3 <- c(col.v[1],col.v[2],col.v[5])
 p1 <- ggplot(fragment.df, aes(x=frag_len, y=coverage, col=dosage, shape=dosage))+
     geom_point(alpha=0.2)+
     geom_smooth(method="loess", span=0.1)+ #geom_smooth, line also works
-    theme_classic(base_size=18)+
+    theme_classic(base_size=25)+
     coord_flip()+
     scale_x_continuous(expand=c(0,0))+
     scale_y_continuous(expand=c(0,0), limits=c(0,NA))+
@@ -117,7 +117,7 @@ total.df$dosage <- factor(total.df$dosage, levels=c("0","75","500"))
 p2 <- ggplot(total.df, aes(x=frag_len, y=coverage, col=dosage, shape=dosage))+
     geom_point(alpha=0.2)+
     geom_smooth(method="loess", span=0.1)+ #geom_smooth, line also works
-    theme_classic(base_size=18)+
+    theme_classic(base_size=25)+
     coord_flip()+
     scale_x_continuous(expand=c(0,0))+
     scale_y_continuous(expand=c(0,0), limits=c(0,NA))+
@@ -130,6 +130,6 @@ p2 <- ggplot(total.df, aes(x=frag_len, y=coverage, col=dosage, shape=dosage))+
 p3 <- p1 %>% insert_left(p2,width=0.28)
 
 
-png("~/dosage_manuscript/figure_6/combined_frag_len_plots_chase.png", width = 13, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_6/combined_frag_len_plots_chase_revision.png", width = 13, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p3)
 dev.off()

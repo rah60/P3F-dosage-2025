@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --job-name=bash
 
-#call motifs for both Figure 5D & Extended Data Figure 4C
+#call motifs for Figure 5D
 
 ml purge
 

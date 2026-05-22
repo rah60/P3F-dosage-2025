@@ -4,7 +4,7 @@
 #SBATCH --job-name=bash
 #SBATCH --partition=himem
 
-#set up annotations for Extended Data figure 4B, peak_annotation_fig.R
+#set up annotations for Extended Data figure 14B, peak_annotation_fig.R
 
 ml purge
 

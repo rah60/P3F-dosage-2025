@@ -12,7 +12,7 @@ library(enrichR)
 library(viridis)
 library(cowplot)
 
-#Figure 6B, Extended Data Figures 5A & B
+#Supplemental Figures 15A, B, & C
 #using clusters established in heatmap.sh
 
 ############process datasets & join to get info together in one dataframe
@@ -60,7 +60,7 @@ pulse$annotation_simplified <- sapply(str_split(pulse$Annotation, fixed("(") ),"
 
 ######### Unique dosage peak plot by cluster
 
-#Extended Data Figure 5B
+#Supplemental Figure 15C
 
 #look at peaks unique to one dosage
 subset_category <- c("0","75","150","250","500","1000")
@@ -83,19 +83,19 @@ for(i in 1:nrow(hello_2)){
 #plot
 p1 <- ggplot(data = hello_2)+
     geom_col(aes(x=peak_category, y=n_norm, fill=deepTools_group), position="dodge")+
-    theme_classic(base_size = 16)+
+    theme_classic(base_size = 22)+
     labs(x= "Unique peak category\n(ng/ml doxycycline)", y="Percent of peaks in cluster", fill="Peak category")+
     scale_y_continuous(expand=c(0,0))+
-    scale_fill_manual(values=c("#997700","#994455","#004488"),labels=c("Cluster 1", "Cluster 2", "Cluster3"))
+    scale_fill_manual(values=c("#997700","#994455","#004488"),labels=c("Cluster 1", "Cluster 2", "Cluster 3"))
 
-png("~/dosage_manuscript/figure_5/unique_peak_category_clusters.png", width = 7, height = 5, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_6/unique_peak_category_clusters_revision.png", width = 7, height = 5, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p1)
 dev.off()
 
 
 ######## annotation plot by cluster
 
-#Figure 6B
+#Supplemental Figure 15A
 
 #summarize annotation by cluster
 pulse_sum <- count(pulse, annotation_simplified, deepTools_group)
@@ -113,12 +113,12 @@ for(i in 1:nrow(pulse_sum)){
 p2 <- ggplot(data = pulse_sum)+
     geom_col(aes(x=annotation_simplified, y= n_norm, fill=deepTools_group), position="dodge")+
     scale_y_continuous(expand=c(0,0))+
-    theme_classic(base_size = 16)+
+    theme_classic(base_size = 22)+
     scale_fill_manual(values=c("#997700","#994455","#004488"),labels=c("Cluster 1", "Cluster 2", "Cluster 3"))+
     labs(x= "Peak annotation", y="Percent of peaks", fill="Peak category")+
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=16),legend.position = c(0.2, 0.7))
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=16),legend.position.inside = c(0.2, 0.7))
 
-png("~/dosage_manuscript/figure_6/annotations_clusters.png", width = 5, height = 4, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png("~/dosage_manuscript/figure_6/annotations_clusters_revision.png", width = 7, height = 5, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p2)
 dev.off()
 
@@ -164,21 +164,26 @@ plot_gene_sets <- function(gene_sets, num_sets = 10, fill_col="black", plot_titl
     p1 <- ggplot(select_20) +
         geom_col(aes(x=factor(Term, level=order.v), y=log10_adj_pval, fill="blank"))+
         coord_flip()+
-        theme_classic(base_size=16)+
+        theme_classic(base_size=20)+
         scale_fill_manual(values=fill_col)+
         scale_y_continuous(expand = c(0,0), limits=c(0,max_val))+
-        labs(x= "Gene sets" , y="-Log10 adjusted p-value", title=plot_title)+
+        labs(x= "Gene sets" , y="-Log10 adjusted\np-value", title=plot_title)+
         guides(fill="none")
 
     return(p1)
 }
 
-#Extended Data Figure 5A
+#Extended Data Figure 15B
 
 #run Enrichr analysis
 enriched_clust_1 <- enrichr(enrich_genes[which(enrich_genes$deepTools_group == "cluster_1"),2], dbs_to_use)
+enriched_clust_1[["MSigDB_Hallmark_2020"]][which(enriched_clust_1[["MSigDB_Hallmark_2020"]] == "Epithelial Mesenchymal Transition"),1] <- "EMT"
+
 enriched_clust_2 <- enrichr(enrich_genes[which(enrich_genes$deepTools_group == "cluster_2"),2], dbs_to_use)
+enriched_clust_2[["MSigDB_Hallmark_2020"]][which(enriched_clust_2[["MSigDB_Hallmark_2020"]] == "Epithelial Mesenchymal Transition"),1] <- "EMT"
+
 enriched_clust_3 <- enrichr(enrich_genes[which(enrich_genes$deepTools_group == "cluster_3"),2], dbs_to_use)
+enriched_clust_3[["MSigDB_Hallmark_2020"]][which(enriched_clust_3[["MSigDB_Hallmark_2020"]] == "Epithelial Mesenchymal Transition"),1] <- "EMT"
 
 #set up max value for plots 
 max_val <- max(max(-log10(enriched_clust_1[["MSigDB_Hallmark_2020"]]$Adjusted.P.value)) , max(-log10(enriched_clust_2[["MSigDB_Hallmark_2020"]]$Adjusted.P.value)) , max(-log10(enriched_clust_3[["MSigDB_Hallmark_2020"]]$Adjusted.P.value)) )
@@ -192,9 +197,9 @@ clust_3 <- plot_gene_sets(enriched_clust_3[["MSigDB_Hallmark_2020"]], fill_col="
 
 #combine plots and save
 
-png( paste0("~/dosage_manuscript/figure_6/hallmarks_enrichr_clusters_plot_v2.png"), width = 12, height = 8, units = "in", res = 200, bg = "transparent", type = "cairo-png")
+png( paste0("~/dosage_manuscript/figure_6/hallmarks_enrichr_clusters_plot_v2.png"), width = 6, height = 12, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(
-plot_grid(clust_1, clust_2, clust_3, ncol=2)
+plot_grid(clust_1, clust_2, clust_3, ncol=1)
 )
 dev.off()
 

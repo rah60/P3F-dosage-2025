@@ -1,0 +1,483 @@
+---
+title: "ANALYSIS OF INDUCIBLE MYOBLASTS (SUNKEL ET AL., 2021) TO SEE IF NEURAL GENES ARE ACTIVATED"--Supplemental Figure 4 in Hoffman et al 2026
+author: "Jack Kucinski"
+date: "2024-02-26"
+output: html_document
+---
+
+# ChIP
+## GREAT FOR P3F TARGETS
+```{r}
+library(rGREAT)
+library(S4Vectors)
+library(GenomicRanges)
+library(rtracklayer)
+library(clusterProfiler)
+library(DOSE)
+library(enrichplot)
+library(tidyverse)
+library(data.table)
+library(org.Hs.eg.db)
+OrgDb="org.Hs.eg.db"
+set.seed(626)
+setwd("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ChIP/OUTPUTS")
+
+bed_file <- "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ChIP/INPUTS/GSM4971624_PAX3-FOXO1_Dbt-iP3F_24hr.regionPeak.bed"
+genome <- "hg38"
+bed3 <- fread(bed_file, header = FALSE)[, 1:3]
+colnames(bed3) <- c("chr", "start", "end")
+bed3 <- bed3[
+  !is.na(chr) & !is.na(start) & !is.na(end)]
+bed3$start <- as.integer(floor(as.numeric(bed3$start)))
+bed3$end   <- as.integer(ceiling(as.numeric(bed3$end)))
+peaks_gr <- GRanges(
+  seqnames = bed3$chr,
+  ranges = IRanges(start = bed3$start + 1, end = bed3$end))
+
+job <- submitGreatJob(peaks_gr, species = genome)
+targets_tbl <- getRegionGeneAssociations(job)
+gr <- targets_tbl
+gene_counts <- sort(table(unlist(mcols(gr)$annotated_genes, use.names = FALSE)),
+                    decreasing = TRUE)
+gene_counts_df <- data.frame(
+  gene = names(gene_counts),
+  n_peaks = as.integer(gene_counts),
+  row.names = NULL)
+write.csv(gene_counts_df, "P3F_24hr_Targets.csv", row.names = FALSE)
+```
+## P3F TARGETS PATHWAYS - PANEL F, G
+```{r}
+library(clusterProfiler)
+library(tidyverse)
+library(org.Hs.eg.db)
+library(msigdbr)
+
+OrgDb="org.Hs.eg.db"
+set.seed(626)
+setwd("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ChIP/OUTPUTS")
+
+df <- read.csv("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ChIP/OUTPUTS/P3F_24hr_Targets.csv")
+geneset = msigdbr(species = "Homo sapiens", category = "C5", subcategory = "GO:BP")
+geneSet = subset(geneset, select = c(gs_name, gene_symbol))
+enricher <- enricher(df$gene, TERM2GENE = geneSet,  pvalueCutoff = 0.01, maxGSSize = 2000)
+write.csv(enricher, "P3F_24hr_Targets_Pathways.csv")
+
+fprms <- read.csv("/gpfs0/home1/gdkendalllab/lab/analyses/rsjxk002/PAX7FOXO1/zebrafish/rna/inputs/fprms-markers_human.csv")
+fprms = subset(fprms, select = c(Annotation, Gene))
+enricher <- enricher(df$gene, TERM2GENE = fprms,  pvalueCutoff = 0.01, maxGSSize = 2000)
+write.csv(enricher, "P3F_24hr_Targets_Markers.csv")
+
+bp <- read.csv("P3F_24hr_Targets_Pathways.csv")
+bp <- bp %>% filter(Description %in% c("GOBP_MUSCLE_TISSUE_DEVELOPMENT", "GOBP_NEUROGENESIS"))
+bp$neglog10padj <- -log10(bp$p.adjust)
+rm <- read.csv("P3F_24hr_Targets_Markers.csv")
+rm <- rm %>% filter(Description %in% c("P3F-Neuronal", "P3F-Differentiated"))
+rm$neglog10padj <- -log10(rm$p.adjust)
+
+pdf("P3F_24hr_GOBP.pdf", width = 12, height = 4)
+ggplot(bp, aes(x = neglog10padj, y = ID)) +
+  geom_col(fill = "#C06570", width = 0.8) +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme_classic(base_size = 14) +
+  labs(
+    title = "GOBP",
+    x = "-Log10 adjusted p-value",
+    y = "Gene sets"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0),
+    axis.text.y = element_text(size = 11))
+dev.off()
+
+pdf("P3F_24hr_FPRMS.pdf", width = 12, height = 4)
+ggplot(rm, aes(x = neglog10padj, y = ID)) +
+  geom_col(fill = "#C06570", width = 0.8) +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme_classic(base_size = 14) +
+  labs(
+    title = "FP-RMS Markers",
+    x = "-Log10 adjusted p-value",
+    y = "Gene sets"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0),
+    axis.text.y = element_text(size = 11))
+dev.off()
+```
+## HEATMAP ON P3F PEAKS - PANEL I 
+```{bash}
+# sbatch CMDS/HEATMAP_P3F.sh
+module purge
+module load GCC/9.3.0 \
+            OpenMPI/4.0.3 \
+            deepTools/3.3.1-Python-3.8.2
+
+computeMatrix reference-point \
+  -S INPUTS/GSM4971620_PAX3-FOXO1_Dbt-iP3F_0hr.bigwig \
+      INPUTS/GSM4971624_PAX3-FOXO1_Dbt-iP3F_24hr.bigwig \
+  -R  INPUTS/GSM4971624_PAX3-FOXO1_Dbt-iP3F_24hr.regionPeak.bed \
+  --referencePoint center \
+  -b 3000 \
+  -a 3000 \
+  -bs=1 \
+  -p=max \
+  --missingDataAsZero \
+  -o OUTPUTS/P3F_24hr_HEATMAP.matrix.gz
+plotHeatmap \
+      -m OUTPUTS/P3F_24hr_HEATMAP.matrix.gz \
+      -o OUTPUTS/P3F_24hr_HEATMAP.pdf \
+      --regionsLabel P3F_PEAKS \
+      --samplesLabel 0hr 24hr \
+      --colorMap=PuRd
+```
+# ATAC-seq
+## DOWNLOAD DATA
+```{bash}
+# sbatch CMDS/FILES.SH
+module purge
+module load GCC/9.3.0 \
+            OpenMPI/4.0.3 \
+            SRA-Toolkit/2.10.8
+
+SRR_LIST=(
+SRR13242856
+SRR13242857
+SRR13242858
+SRR13242859
+SRR13242860
+SRR13242861)
+R1=${SRR_LIST[$SLURM_ARRAY_TASK_ID]}
+
+fastq-dump \
+ -O INPUTS/FASTQ \
+ --gzip \
+ --split-files \
+ ${R1}
+```
+## ENCODE PIPELINE
+```{bash}
+cd INPUTS/PIPELINE
+
+caper hpc submit /home/gdkendalllab/jxk197/encode_pipelines/atac-seq-pipeline/atac.wdl \
+    -i /home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/INPUTS/PIPELINE/0HR.json \
+    --singularity \
+    --slurm-leader-job-resource-param="--time=24:00:00" \
+	--leader-job-name atac
+
+caper hpc submit /home/gdkendalllab/jxk197/encode_pipelines/atac-seq-pipeline/atac.wdl \
+    -i /home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/INPUTS/PIPELINE/24HR.json \
+    --singularity \
+    --slurm-leader-job-resource-param="--time=24:00:00" \
+	--leader-job-name atac
+```
+## DIFFERENTIAL ENRICHMENT
+```{r}
+library(DiffBind)
+library(tidyverse)
+set.seed(626)
+setwd("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/PEAKS")
+
+samples <- data.frame(
+  SampleID=c("0hr_rep1", "0hr_rep2", "24hr_rep1", "24hr_rep2"),
+  Condition=c(rep("0hr",2),rep("24hr",2)),
+  Tissue=rep("human",4),
+  Factor=c(rep("0hr",2),rep("24hr",2)),
+  Replicate=rep(1:2, 2),
+  bamReads=c(
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/0hr/align/rep1/SRR13242856_1.trim.srt.nodup.no_chrM_MT.bam",
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/0hr/align/rep2/SRR13242857_1.trim.srt.nodup.no_chrM_MT.bam",
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/24hr/align/rep1/SRR13242860_1.trim.srt.nodup.no_chrM_MT.bam",
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/24hr/align/rep2/SRR13242861_1.trim.srt.nodup.no_chrM_MT.bam"),
+  Peaks=    c(  rep("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/24hr/peak/overlap_reproducibility/overlap.optimal_peak.narrowPeak.gz", 4)),
+  PeakFormat=rep("narrow", 4))
+file.exists(samples$Peaks)
+file.exists(samples$bamReads) 
+
+dbObj <- dba(sampleSheet=samples)
+dbObj <- dba.count(dbObj, bUseSummarizeOverlaps=TRUE, summits=FALSE)
+dbObj <- dba.contrast(dbObj, categories=DBA_FACTOR, minMembers = 2)
+dbObj <- dba.analyze(dbObj, method=DBA_ALL_METHODS)
+res_deseq <- dba.report(dbObj, method=DBA_DESEQ2, contrast = 1, th=1)
+out <- as.data.frame(res_deseq)
+write.table(out, file="ATAC-24v0hr_DESEQ2.txt", sep="\t", quote=F, row.names=F, col.names=T)
+out <- read.table("ATAC-24v0hr_DESEQ2.txt", header = TRUE)
+pf <- out %>% 
+  filter(FDR < 0.05 & Fold > 1) %>%
+  select(seqnames, start, end)
+write.table(pf, file="ATAC-24v0hr_INCREASED.bed", sep="\t", quote=F, row.names=F, col.names=F)
+```
+## HEATMAP - PANEL H
+```{bash}
+# sbatch CMDS/HEATMAP.sh
+module purge
+module load GCC/9.3.0 \
+            OpenMPI/4.0.3 \
+            deepTools/3.3.1-Python-3.8.2
+
+computeMatrix reference-point \
+  -S  /home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/INPUTS/BIGWIG/GSM4971630_ATAC_Dbt-iP3F_0hr_rep1.bigwig \
+      /home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/INPUTS/BIGWIG/GSM4971631_ATAC_Dbt-iP3F_0hr_rep2.bigwig \
+      /home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/INPUTS/BIGWIG/GSM4971634_ATAC_Dbt-iP3F_24hr_rep1.bigwig \
+      /home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/INPUTS/BIGWIG/GSM4971635_ATAC_Dbt-iP3F_24hr_rep2.bigwig \
+  -R  /home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/PEAKS/ATAC-24v0hr_INCREASED.bed \
+  --referencePoint center \
+  -b 3000 \
+  -a 3000 \
+  -bs=1 \
+  -p=max \
+  --missingDataAsZero \
+  -o OUTPUTS/HEATMAPS/INCREASED_ATAC.matrix.gz
+plotHeatmap \
+      -m OUTPUTS/HEATMAPS/INCREASED_ATAC.matrix.gz \
+      -o OUTPUTS/HEATMAPS/INCREASED_ATAC.pdf \
+      --regionsLabel INCREASED_ATAC \
+      --samplesLabel 0hr_rep1 0hr_rep2 24hr_rep1 24hr_rep2 \
+      --perGroup \
+      --colorMap=Blues
+```
+## PEAK ANNOTATION - PANEL F, G
+```{r}
+library(rGREAT)
+library(S4Vectors)
+library(GenomicRanges)
+library(rtracklayer)
+library(clusterProfiler)
+library(DOSE)
+library(enrichplot)
+library(tidyverse)
+library(data.table)
+library(org.Hs.eg.db)
+library(msigdbr)
+OrgDb="org.Hs.eg.db"
+set.seed(626)
+setwd("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ANNOTATION")
+
+# GREAT ANALYSIS
+bed_file <- "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/PEAKS/ATAC-24v0hr_INCREASED.bed"
+genome <- "hg38"
+bed3 <- fread(bed_file, header = FALSE)[, 1:3]
+colnames(bed3) <- c("chr", "start", "end")
+bed3 <- bed3[
+  !is.na(chr) & !is.na(start) & !is.na(end)]
+bed3$start <- as.integer(floor(as.numeric(bed3$start)))
+bed3$end   <- as.integer(ceiling(as.numeric(bed3$end)))
+peaks_gr <- GRanges(
+  seqnames = bed3$chr,
+  ranges = IRanges(start = bed3$start + 1, end = bed3$end))
+genome   <- "hg38"
+
+job <- submitGreatJob(peaks_gr, species = genome)
+targets_tbl <- getRegionGeneAssociations(job)
+gr <- targets_tbl
+gene_counts <- sort(table(unlist(mcols(gr)$annotated_genes, use.names = FALSE)),
+                    decreasing = TRUE)
+gene_counts_df <- data.frame(
+  gene = names(gene_counts),
+  n_peaks = as.integer(gene_counts),
+  row.names = NULL)
+write.csv(gene_counts_df, "ATAC-INCREASE_24hr_Targets.csv", row.names = FALSE)
+
+# PATHWAY ANALYSIS
+df <- read.csv("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ANNOTATION/ATAC-INCREASE_24hr_Targets.csv")
+geneset = msigdbr(species = "Homo sapiens", category = "C5", subcategory = "GO:BP")
+geneSet = subset(geneset, select = c(gs_name, gene_symbol))
+enricher <- enricher(df$gene, TERM2GENE = geneSet,  pvalueCutoff = 0.01, maxGSSize = 2000)
+write.csv(enricher, "ATAC-INCREASE_24hr_Targets_Pathways.csv")
+
+fprms <- read.csv("/gpfs0/home1/gdkendalllab/lab/analyses/rsjxk002/PAX7FOXO1/zebrafish/rna/inputs/fprms-markers_human.csv")
+fprms = subset(fprms, select = c(Annotation, Gene))
+enricher <- enricher(df$gene, TERM2GENE = fprms,  pvalueCutoff = 0.01, maxGSSize = 2000)
+write.csv(enricher, "ATAC-INCREASE_24hr_Targets_Markers.csv")
+
+bp <- read.csv("ATAC-INCREASE_24hr_Targets_Pathways.csv")
+bp <- bp %>% filter(Description %in% c("GOBP_MUSCLE_TISSUE_DEVELOPMENT", "GOBP_NEUROGENESIS"))
+bp$neglog10padj <- -log10(bp$p.adjust)
+rm <- read.csv("ATAC-INCREASE_24hr_Targets_Markers.csv")
+rm <- rm %>% filter(Description %in% c("P3F-Neuronal", "P3F-Differentiated"))
+rm$neglog10padj <- -log10(rm$p.adjust)
+
+pdf("ATAC-INCREASE_GOBP.pdf", width = 12, height = 4)
+ggplot(bp, aes(x = neglog10padj, y = ID)) +
+  geom_col(fill = "#0072B2", width = 0.8) +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme_classic(base_size = 14) +
+  labs(
+    title = "GOBP",
+    x = "-Log10 adjusted p-value",
+    y = "Gene sets"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0),
+    axis.text.y = element_text(size = 11))
+dev.off()
+
+pdf("ATAC-INCREASE_24hr_FPRMS.pdf", width = 12, height = 4)
+ggplot(rm, aes(x = neglog10padj, y = ID)) +
+  geom_col(fill = "#0072B2", width = 0.8) +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme_classic(base_size = 14) +
+  labs(
+    title = "FP-RMS Markers",
+    x = "-Log10 adjusted p-value",
+    y = "Gene sets"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0),
+    axis.text.y = element_text(size = 11))
+dev.off()
+```
+## PEAK ANNOTATION - FIGURE MAKING - PANEL F, G
+```{r}
+library(rGREAT)
+library(S4Vectors)
+library(GenomicRanges)
+library(rtracklayer)
+library(clusterProfiler)
+library(DOSE)
+library(enrichplot)
+library(tidyverse)
+library(data.table)
+library(org.Hs.eg.db)
+library(msigdbr)
+OrgDb="org.Hs.eg.db"
+set.seed(626)
+setwd("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ANNOTATION")
+
+atac <- read.csv("ATAC-INCREASE_24hr_Targets_Pathways.csv")
+atac <- atac %>% filter(Description %in% c("GOBP_NEUROGENESIS"))
+atac$sample <- c("atac_neuro")
+atac$neglog10padj <- -log10(atac$p.adjust)
+
+chip <- read.csv("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ChIP/OUTPUTS/P3F_24hr_Targets_Pathways.csv")
+chip <- chip %>% filter(Description %in% c("GOBP_NEUROGENESIS"))
+chip$sample <- c("chip_neuro")
+chip$neglog10padj <- -log10(chip$p.adjust)
+df <- rbind(atac, chip)
+
+pdf("GOBP.pdf", width = 8, height = 4)
+ggplot(df, aes(x = neglog10padj, y = sample)) +
+  geom_col(fill = "#0072B2", width = 0.8) +
+  geom_text(aes(label = ID)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme_classic(base_size = 14) +
+  labs(
+    title = "GOBP",
+    x = "-Log10 adjusted p-value",
+    y = "Gene sets"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0),
+    axis.text.y = element_text(size = 11))
+dev.off()
+
+atac <- read.csv("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ANNOTATION/ATAC-INCREASE_24hr_Targets_Markers.csv")
+atac <- atac %>% filter(Description %in% c("P3F-Neuronal"))
+atac$sample <- c("atac_neuro")
+atac$neglog10padj <- -log10(atac$p.adjust)
+
+chip <- read.csv("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ChIP/OUTPUTS/P3F_24hr_Targets_Markers.csv")
+chip <- chip %>% filter(Description %in% c("P3F-Neuronal"))
+chip$sample <- c("chip_neuro")
+chip$neglog10padj <- -log10(chip$p.adjust)
+df <- rbind(atac, chip)
+
+pdf("FPRMS.pdf", width = 8, height = 4)
+ggplot(df, aes(x = neglog10padj, y = sample)) +
+  geom_col(fill = "#0072B2", width = 0.8) +
+  geom_text(aes(label = ID)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme_classic(base_size = 14) +
+  labs(
+    title = "FPRMS",
+    x = "-Log10 adjusted p-value",
+    y = "Gene sets"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0),
+    axis.text.y = element_text(size = 11))
+dev.off()
+```
+## GENE PROMOTERS
+```{r}
+library(GenomicFeatures)
+library(BSgenome.Hsapiens.NCBI.GRCh38)
+library(rtracklayer)
+library(Biostrings)
+library(msigdbr)
+library(tidyverse)
+setwd("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/PROMOTERS")
+
+txdb <- makeTxDbFromGFF("/gpfs0/export/reference/homo_sapiens/hg38/ucsc_assembly/illumina_download/Annotation/Archives/archive-2015-08-14-08-18-15/Genes/genes.gtf")
+promoters <- promoters(genes(txdb), upstream=1000, downstream=100)
+
+geneset = msigdbr(species = "Homo sapiens", category = "C5", subcategory = "GO:BP")
+geneSet = subset(geneset, select = c(gs_name, gene_symbol))
+neuro <- geneSet %>% filter(gs_name %in% c("GOBP_NEUROGENESIS"))
+muscle <- geneSet %>% filter(gs_name %in% c("GOBP_MUSCLE_TISSUE_DEVELOPMENT"))
+
+promoters_subset <- promoters[names(promoters) %in% neuro$gene_symbol]
+export(promoters_subset, "neuro_promoters.bed", format = "BED")
+promoters_subset <- promoters[names(promoters) %in% muscle$gene_symbol]
+export(promoters_subset, "muscle_promoters.bed", format = "BED")
+
+fprms <- read.csv("/gpfs0/home1/gdkendalllab/lab/analyses/rsjxk002/PAX7FOXO1/zebrafish/rna/inputs/fprms-markers_human.csv")
+neuronal <- fprms %>% filter(Annotation %in% c("P3F-Neuronal"))
+diff <- fprms %>% filter(Annotation %in% c("P3F-Differentiated"))
+promoters_subset <- promoters[names(promoters) %in% neuronal$Gene]
+export(promoters_subset, "fprms-neuronal_promoters.bed", format = "BED")
+promoters_subset <- promoters[names(promoters) %in% diff$Gene]
+export(promoters_subset, "fprms-differentiated_promoters.bed", format = "BED")
+```
+## PROMOTER FOLD CHANGE - PANEL I
+```{r}
+library(DiffBind)
+library(tidyverse)
+set.seed(626)
+setwd("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/PROMOTERS")
+
+samples <- data.frame(
+  SampleID=c("0hr_rep1", "0hr_rep2", "24hr_rep1", "24hr_rep2"),
+  Condition=c(rep("0hr",2),rep("24hr",2)),
+  Tissue=rep("human",4),
+  Factor=c(rep("0hr",2),rep("24hr",2)),
+  Replicate=rep(1:2, 2),
+  bamReads=c(
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/0hr/align/rep1/SRR13242856_1.trim.srt.nodup.no_chrM_MT.bam",
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/0hr/align/rep2/SRR13242857_1.trim.srt.nodup.no_chrM_MT.bam",
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/24hr/align/rep1/SRR13242860_1.trim.srt.nodup.no_chrM_MT.bam",
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/24hr/align/rep2/SRR13242861_1.trim.srt.nodup.no_chrM_MT.bam"),
+  Peaks=    c(  rep("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/PROMOTERS/fprms-neuronal_promoters.bed", 4)),
+  PeakFormat=rep("narrow", 4))
+file.exists(samples$Peaks)
+file.exists(samples$bamReads) 
+dbObj <- dba(sampleSheet=samples)
+dbObj <- dba.count(dbObj, bUseSummarizeOverlaps=TRUE, summits=FALSE)
+dbObj <- dba.contrast(dbObj, categories=DBA_FACTOR, minMembers = 2)
+dbObj <- dba.analyze(dbObj, method=DBA_ALL_METHODS)
+res_deseq <- dba.report(dbObj, method=DBA_DESEQ2, contrast = 1, th=1)
+out <- as.data.frame(res_deseq)
+write.csv(out, file="DESEQ2_FPRMS-NEURONAL_PROMOTERS_BED.csv")
+
+samples <- data.frame(
+  SampleID=c("0hr_rep1", "0hr_rep2", "24hr_rep1", "24hr_rep2"),
+  Condition=c(rep("0hr",2),rep("24hr",2)),
+  Tissue=rep("human",4),
+  Factor=c(rep("0hr",2),rep("24hr",2)),
+  Replicate=rep(1:2, 2),
+  bamReads=c(
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/0hr/align/rep1/SRR13242856_1.trim.srt.nodup.no_chrM_MT.bam",
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/0hr/align/rep2/SRR13242857_1.trim.srt.nodup.no_chrM_MT.bam",
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/24hr/align/rep1/SRR13242860_1.trim.srt.nodup.no_chrM_MT.bam",
+    "/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/ENCODE/24hr/align/rep2/SRR13242861_1.trim.srt.nodup.no_chrM_MT.bam"),
+  Peaks=    c(  rep("/home/gdkendalllab/lab/analyses/rsjxk002/SUNKEL_2021/ATAC/OUTPUTS/PROMOTERS/neuro_promoters.bed", 4)),
+  PeakFormat=rep("narrow", 4))
+file.exists(samples$Peaks)
+file.exists(samples$bamReads) 
+dbObj <- dba(sampleSheet=samples)
+dbObj <- dba.count(dbObj, bUseSummarizeOverlaps=TRUE, summits=FALSE)
+dbObj <- dba.contrast(dbObj, categories=DBA_FACTOR, minMembers = 2)
+dbObj <- dba.analyze(dbObj, method=DBA_ALL_METHODS)
+res_deseq <- dba.report(dbObj, method=DBA_DESEQ2, contrast = 1, th=1)
+out <- as.data.frame(res_deseq)
+write.csv(out, file="DESEQ2_GOBP-NEUROGENESIS_PROMOTERS.csv")
+```

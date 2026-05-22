@@ -1,7 +1,7 @@
 rm(list = ls())
 graphics.off()
 
-#creates Extended Data Figure 4B
+#creates Extended Data Figure 8B
 #also saves expressed genes at each dosage for use in other scripts
 
 library(DESeq2)
@@ -98,13 +98,17 @@ h_gene_sets <- msigdbr(species = "Homo sapiens", category = "H") #human hallmark
 
 h_gene_sets2 <- split(x=h_gene_sets$ensembl_gene, f=h_gene_sets$gs_name)
 
-gsvaPar <- gsvaParam(norm_data, h_gene_sets2, kcdf = "Gaussian", minSize = 15, maxSize = 500) #for some reason, had to update to new version of R to get this to work
-
-#gsvaPar <- gsvaParam(counts, h_gene_sets2, kcdf = "Poisson") #for some reason, seems to cluster better with this...though counts are not integers, just not log2. generally trends look very similar
+gsvaPar <- gsvaParam(norm_data, h_gene_sets2, kcdf = "Gaussian", minSize = 15, maxSize = 500) 
 
 res <- gsva(gsvaPar)
 
-pheatmap(res, cluster_cols = F)
+#select rows & put in same order as in Figure 4A for comparison
+temp <- readRDS( "~/Documents/manuscript/revision/dmp_dosage_sig_rows_dosages.rds")
+save_me <- which(rownames(res) %in% temp)
+res <- res[save_me,]
+
+r_order <- readRDS("~/Documents/manuscript/revision/dmp_dosage_row_order_dosages.rds")
+res <- res[r_order,]
 
 #heatmap
 
@@ -141,13 +145,6 @@ names(col_clust2) <- factor(unique(ann_col1$Replicate), levels = c(1,2,3,4))
 
 ann_col <- list( Replicate = col_clust2, Dosage = col_clust )
 
-#select rows & put in same order as in Figure 4A for comparison
-save_me <- readRDS("~/dosage_manuscript/rds/dmp_dosage_sig_rows_dosages.rds")
-row_ordering <- readRDS("~/dosage_manuscript/rds/dmp_dosage_row_order_dosages.rds")
-
-res <- res[save_me,]
-res <- res[row_ordering,]
-
 library(pheatmap)
 library(RColorBrewer)
 library(ComplexHeatmap)
@@ -157,11 +154,10 @@ p2 <- pheatmap(res, color=col,cluster_cols = F,cluster_rows = F, angle_col = "31
                annotation_col = ann_col1, annotation_colors = ann_col, annotation_names_col=T,show_colnames = F,
                legend_breaks = c(-0.6,-0.4, -0.2, 0, 0.2,0.4,0.6), legend_labels = c("-0.6","-0.4","-0.2","0","0.2", "0.4","0.6"),main="",
           heatmap_legend_param = list(title=as.character("Scaled\nexpression"), direction="horizontal",title_position = "topcenter"),
-          cellwidth = 15, cellheight = 9 
+          cellwidth = 9, cellheight = 9 
 )
 
-
-png(paste0("~/Documents/rnaseq_iEV_heatmap_ip3f_sig_order.png" ), width =10, height =6, units = "in", res = 200, bg = "white", type = "cairo-png")
+png(paste0("~/Documents/rnaseq_iEV_heatmap_ip3f_sig_order_revisions_051125.png" ), width =10, height =10, units = "in", res = 200, bg = "white", type = "cairo-png")
 draw(p2, heatmap_legend_side = "bottom", annotation_legend_side = "left")
 dev.off()
 
