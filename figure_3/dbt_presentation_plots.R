@@ -54,6 +54,11 @@ col.v1 <- viridis(8)
 col.v <- col.v1[1:7]
 names(col.v) <- c("0","75","150","250","500","1000","common")
 
+#for source data
+write.csv(n_cat,"~/dosage_manuscript/csv/peak_counts_figure3.csv")
+write.csv(n_cat_2, "~/dosage_manuscript/csv/peak_counts_2_peak.csv")
+write.csv(n_cat_3, "~/dosage_manuscript/csv/peak_counts_3_peak.csv")
+
 #Figure 3C
 dbt.df <- n_cat
 

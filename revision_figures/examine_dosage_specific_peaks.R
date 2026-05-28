@@ -60,8 +60,6 @@ png("~/dosage_manuscript/revision_figures/SMS_unique_peak_count.png", width = 6,
 print(p2)
 dev.off()
 
-
-
 ######### total peaks
 
 #total peaks by idr files from ENCODE pipeline
@@ -114,3 +112,7 @@ p4 <- ggplot(temp2)+
 png("~/dosage_manuscript/revision_figures/SMS_total_peak_count.png", width = 6, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p4)
 dev.off()
+
+#for source data
+write.csv(temp1, "~/dosage_manuscript/csv/peaks_RD.csv")
+write.csv(temp2, "~/dosage_manuscript/csv/peaks_SMS.csv")

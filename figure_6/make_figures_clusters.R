@@ -92,6 +92,8 @@ png("~/dosage_manuscript/figure_6/unique_peak_category_clusters_revision.png", w
 print(p1)
 dev.off()
 
+#for source data
+write.csv(hello_2, "~/dosage_manuscript/csv/s15c.csv")
 
 ######## annotation plot by cluster
 
@@ -122,6 +124,8 @@ png("~/dosage_manuscript/figure_6/annotations_clusters_revision.png", width = 7,
 print(p2)
 dev.off()
 
+#for source data
+write.csv(pulse_sum, "~/dosage_manuscript/csv/s15a.csv")
 
 ########### set up gene sets by cluster plots
 #shorten dataframe for focusing on genes

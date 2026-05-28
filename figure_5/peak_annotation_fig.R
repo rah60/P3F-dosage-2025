@@ -93,3 +93,11 @@ p2 <- ggplot(chase_df, aes(x=dosage,fill=dosage) )+
 png("~/dosage_manuscript/figure_5/total_peak_annotation_chase_revision.png", width = 10, height = 6.5, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p2)
 dev.off()
+
+#for source data
+
+n_count_pulse <- pulse_df %>% count(annotation, dosage)
+n_count_chase <- chase_df %>% count(annotation, dosage)
+
+write.csv(n_count_chase, "~/dosage_manuscript/csv/chase_annotations.csv")
+write.csv(n_count_pulse, "~/dosage_manuscript/csv/pulse_annotations.csv")

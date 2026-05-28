@@ -8,6 +8,7 @@ library(DESeq2)
 library(dplyr)
 library(tidyverse)
 library(viridis)
+library(ggsignif)
 
 #Dbt/MYCN/iP3F
 de_result <- read.table('~/dosage_manuscript/csv/DE_result.txt', sep="\t", as.is=T, header=T, quote="\"")

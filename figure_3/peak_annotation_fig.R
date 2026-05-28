@@ -61,6 +61,9 @@ for(i in 1:nrow(new_ann)){
 
 new_ann$percent <- new_ann$n/new_ann$cluster_total #calculate percent
 
+#for source data
+write_csv(new_ann, "~/dosage_manuscript/csv/figure3_annotations.csv")
+
 p2 <- ggplot(new_ann, aes(x=dosage,y=percent, fill=dosage) )+
   geom_bar(show.legend = FALSE,stat = "identity", position = "dodge")+
   labs(y="Fraction of sites in sample",x="Doxycycline (ng/mL)", title="")+

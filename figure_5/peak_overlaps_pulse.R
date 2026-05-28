@@ -122,6 +122,9 @@ dbt.df <- as.data.frame(cbind(dosage,unique_peak_count,total_peak_count))
 dbt.df$unique_peak_count <- as.numeric(unique_peak_count)
 dbt.df$total_peak_count <- as.numeric(total_peak_count)
 
+#for source data
+write.csv(dbt.df, "~/dosage_manuscript/csv/peaks_pulse.csv")
+
 library(viridis)
 col.v1 <- viridis(8)
 col.v <- c(col.v1[1],col.v1[2], col.v1[5], col.v1[7])

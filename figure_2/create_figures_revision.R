@@ -98,6 +98,9 @@ for(i in 1:nrow(n_cells)){
 
 n_cells$percent <- n_cells$value/n_cells$cluster_total
 
+#for source data
+write.csv(n_cells, "~/dosage_manuscript/csv/n_cells_figure_2d.csv")
+
 p3 <- ggplot(n_cells, aes( x=sample_names, fill=sample_names, y=percent ))+
   geom_bar(stat = "identity", position = "dodge")+
   labs(x="Doxycycline (ng/mL),\n2 week induction",y="Fraction of sample",fill="Sample")+
@@ -132,6 +135,9 @@ colnames(cell_cycle.df) <- c("Fraction", "Sample","Phase")
 cell_cycle.df$Fraction <- as.numeric(cell_cycle.df$Fraction)
 cell_cycle.df$Sample <- factor(cell_cycle.df$Sample, levels= c("0 ng/mL, 2 wks","75 ng/mL, 2 wks","500 ng/mL, 2 wks"))
 new_sample <- c("0 ng/mL, 2 wks" = "0","75 ng/mL, 2 wks" = "75","500 ng/mL, 2 wks" = "500")
+
+#for source data
+write.csv(cell_cycle.df, "~/dosage_manuscript/csv/cell_cycle_two_week.csv")
 
 p4 <- cell_cycle.df %>%
   ggplot(aes( x=factor(Phase,level=c("G1 phase","S phase","G2/M phase")), fill=Sample, y=Fraction ))+

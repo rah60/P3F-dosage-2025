@@ -67,3 +67,7 @@ p2 <- ggplot(data=plot_chase)+
  png(paste0("~/dosage_manuscript/figure_5/dosage_dep_sites.png" ), width = 14, height = 6, units = "in", res = 200, bg = "transparent", type = "cairo-png")
   print(p1 + p2)
   dev.off()
+
+#for source data
+write.csv(plot_pulse, "~/dosage_manuscript/csv/dosage_peaks_pulse.csv")
+write.csv(plot_chase, "~/dosage_manuscript/csv/dosage_peaks_chase.csv")

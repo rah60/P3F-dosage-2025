@@ -104,6 +104,9 @@ for(i in 1:nrow(n_cells)){
 
 n_cells$percent <- n_cells$value/n_cells$cluster_total
 
+#for source data
+write.csv(n_cells,"~/dosage_manuscript/csv/n_cells_withdrawal.csv")
+
 p3 <- ggplot(n_cells, aes( x=sample_names, fill=sample_names, y=percent ))+
   geom_bar(stat = "identity", position = "dodge")+
   labs(x="Hours after PAX3::FOXO1 removal",y="Fraction of sample",fill="Sample")+

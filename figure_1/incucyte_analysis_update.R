@@ -203,3 +203,7 @@ p4 <- ggplot(doubling_time2.df)+
 png("~/dosage_manuscript/figure_1/dbt_mycn_iEV_dt.png", width = 7, height = 7, units = "in", res = 200, bg = "transparent", type = "cairo-png")
 print(p4)
 dev.off()
+
+#for source data
+write.csv(doubling_time.df, "~/dosage_manuscript/csv/doubling_time_dmp.csv")
+write.csv(doubling_time2.df, "~/dosage_manuscript/csv/doubling_time_dmiev.csv")
