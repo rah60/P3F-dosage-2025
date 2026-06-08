@@ -8,5 +8,6 @@ The scripts used for each main figure and the corresponding supplementary figure
 * **figure_5**: Figure 5, Supplemental Figure 14, Supplemental Table 3
 * **figure_6**: Figure 6, Supplemental Figure 15
 * **revision_figures**: Supplemental Figures 10, 11, 12, 13
+* **single_cell_analyses**: additional scripts used for single cell analyses beyond scripts in figure_2
 
 Comments indicate the figure panels created by each script. Note that Supplemental Tables 2 & 4 are not listed because they contain data from across multiple figures/supplemental figures. The initial bioRxiv version of this work is located here: https://www.biorxiv.org/content/10.1101/2025.05.16.654522v1.
