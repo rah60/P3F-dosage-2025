@@ -11,3 +11,5 @@ The scripts used for each main figure and the corresponding supplementary figure
 * **single_cell_analyses**: additional scripts used for single cell analyses beyond scripts in figure_2
 
 Comments indicate the figure panels created by each script. Note that Supplemental Tables 2 & 4 are not listed because they contain data from across multiple figures/supplemental figures. The initial bioRxiv version of this work is located here: https://www.biorxiv.org/content/10.1101/2025.05.16.654522v1.
+
+Contributors to the code for this project: Rachel A. Hoffman, Ambuj Kumar, Meng Wang, and Jack Kucinski.
